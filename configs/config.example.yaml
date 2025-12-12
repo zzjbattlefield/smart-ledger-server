@@ -1,0 +1,44 @@
+server:
+  port: 8080
+  mode: debug  # debug, release, test
+  read_timeout: 10s
+  write_timeout: 10s
+
+database:
+  host: localhost
+  port: 3306
+  username: root
+  password: your_password
+  dbname: smart_ledger
+  charset: utf8mb4
+  max_idle_conns: 10
+  max_open_conns: 100
+  conn_max_lifetime: 1h
+
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0
+
+jwt:
+  secret: your-jwt-secret-key-change-this-in-production
+  issuer: smart-ledger
+  expire_time: 168h  # 7天
+
+ai:
+  provider: qwen  # openai 或 qwen
+  max_image_size: 10485760  # 10MB
+  openai:
+    api_key: your-openai-api-key
+    base_url: ""  # 可选，使用代理时填写
+    model: gpt-4o
+  qwen:
+    api_key: your-qwen-api-key
+    base_url: ""  # 可选
+    model: qwen-vl-max
+
+log:
+  level: debug  # debug, info, warn, error
+  format: console  # json, console
+  output_path: stdout  # stdout 或 文件路径
