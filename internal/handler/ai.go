@@ -79,3 +79,75 @@ func (h *AIHandler) RecognizeAndSave(c *gin.Context) {
 
 	response.Success(c, resp)
 }
+
+// BatchRecognize 批量识别支付截图
+// @Summary 批量识别支付截图
+// @Tags AI
+// @Accept multipart/form-data
+// @Produce json
+// @Security Bearer
+// @Param images formData file true "支付截图（最多20张）"
+// @Success 200 {object} response.Response{data=dto.BatchRecognizeResponse}
+// @Router /ai/batch-recognize [post]
+func (h *AIHandler) BatchRecognize(c *gin.Context) {
+	form, err := c.MultipartForm()
+	if err != nil {
+		response.ParamError(c, "请上传图片")
+		return
+	}
+
+	files := form.File["images"]
+	if len(files) == 0 {
+		response.ParamError(c, "请至少上传一张图片")
+		return
+	}
+
+	resp, err := h.aiService.BatchRecognizeImages(c.Request.Context(), files)
+	if err != nil {
+		if e, ok := err.(*errcode.ErrCode); ok {
+			response.Error(c, e)
+			return
+		}
+		response.ServerError(c)
+		return
+	}
+
+	response.Success(c, resp)
+}
+
+// BatchRecognizeAndSave 批量识别并保存
+// @Summary 批量识别支付截图并保存为账单
+// @Tags AI
+// @Accept multipart/form-data
+// @Produce json
+// @Security Bearer
+// @Param images formData file true "支付截图（最多20张）"
+// @Success 200 {object} response.Response{data=dto.BatchRecognizeAndSaveResponse}
+// @Router /ai/batch-recognize-and-save [post]
+func (h *AIHandler) BatchRecognizeAndSave(c *gin.Context) {
+	userID := c.GetUint64("user_id")
+
+	form, err := c.MultipartForm()
+	if err != nil {
+		response.ParamError(c, "请上传图片")
+		return
+	}
+
+	files := form.File["images"]
+	if len(files) == 0 {
+		response.ParamError(c, "请至少上传一张图片")
+		return
+	}
+
+	resp, err := h.aiService.BatchRecognizeAndSave(c.Request.Context(), userID, files)
+	if err != nil {
+		if e, ok := err.(*errcode.ErrCode); ok {
+			response.Error(c, e)
+			return
+		}
+		response.ServerError(c)
+		return
+	}
+
+	response.Success(c, resp)
+}

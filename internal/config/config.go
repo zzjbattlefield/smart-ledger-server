@@ -72,10 +72,19 @@ type JWTConfig struct {
 
 // AIConfig AI服务配置
 type AIConfig struct {
-	APIKey       string `mapstructure:"api_key"`        // API 密钥
-	BaseURL      string `mapstructure:"base_url"`       // 基础 URL（可选）
-	Model        string `mapstructure:"model"`          // 模型名称
-	MaxImageSize int64  `mapstructure:"max_image_size"` // 最大图片大小(字节)
+	APIKey       string      `mapstructure:"api_key"`        // API 密钥
+	BaseURL      string      `mapstructure:"base_url"`       // 基础 URL（可选）
+	Model        string      `mapstructure:"model"`          // 模型名称
+	MaxImageSize int64       `mapstructure:"max_image_size"` // 最大图片大小(字节)
+	Batch        BatchConfig `mapstructure:"batch"`          // 批量处理配置
+}
+
+// BatchConfig 批量处理配置
+type BatchConfig struct {
+	MaxImages   int `mapstructure:"max_images"`   // 单次请求最大图片数量
+	WorkerCount int `mapstructure:"worker_count"` // Worker并发数
+	RPM         int `mapstructure:"rpm"`          // 每分钟最大AI调用次数
+	TaskTimeout int `mapstructure:"task_timeout"` // 单个任务超时时间(秒)
 }
 
 // LogConfig 日志配置
@@ -160,6 +169,19 @@ func setDefaults(cfg *Config) {
 	}
 	if cfg.AI.MaxImageSize == 0 {
 		cfg.AI.MaxImageSize = 10 * 1024 * 1024 // 10MB
+	}
+	// AI batch defaults
+	if cfg.AI.Batch.MaxImages == 0 {
+		cfg.AI.Batch.MaxImages = 20
+	}
+	if cfg.AI.Batch.WorkerCount == 0 {
+		cfg.AI.Batch.WorkerCount = 1
+	}
+	if cfg.AI.Batch.RPM == 0 {
+		cfg.AI.Batch.RPM = 60
+	}
+	if cfg.AI.Batch.TaskTimeout == 0 {
+		cfg.AI.Batch.TaskTimeout = 60
 	}
 
 	// Log defaults

@@ -110,8 +110,12 @@ func registerAIRoutes(auth *gin.RouterGroup, ctn *container.Container) {
 	if h := ctn.AIHandler(); h != nil {
 		ai := auth.Group("/ai")
 		{
+			// 单张识别
 			ai.POST("/recognize", h.Recognize)
 			ai.POST("/recognize-and-save", h.RecognizeAndSave)
+			// 批量识别
+			ai.POST("/batch-recognize", h.BatchRecognize)
+			ai.POST("/batch-recognize-and-save", h.BatchRecognizeAndSave)
 		}
 	}
 }
