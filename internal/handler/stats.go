@@ -11,11 +11,11 @@ import (
 
 // StatsHandler 统计处理器
 type StatsHandler struct {
-	statsService *service.StatsService
+	statsService service.StatsServiceInterface
 }
 
 // NewStatsHandler 创建统计处理器
-func NewStatsHandler(statsService *service.StatsService) *StatsHandler {
+func NewStatsHandler(statsService service.StatsServiceInterface) *StatsHandler {
 	return &StatsHandler{
 		statsService: statsService,
 	}

@@ -11,11 +11,11 @@ import (
 
 // UserHandler 用户处理器
 type UserHandler struct {
-	userService *service.UserService
+	userService service.UserServiceInterface
 }
 
 // NewUserHandler 创建用户处理器
-func NewUserHandler(userService *service.UserService) *UserHandler {
+func NewUserHandler(userService service.UserServiceInterface) *UserHandler {
 	return &UserHandler{
 		userService: userService,
 	}

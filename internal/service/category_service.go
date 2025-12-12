@@ -9,13 +9,12 @@ import (
 
 	"smart-ledger-server/internal/model"
 	"smart-ledger-server/internal/model/dto"
-	"smart-ledger-server/internal/repository"
 	"smart-ledger-server/pkg/errcode"
 )
 
 // CategoryService 分类服务
 type CategoryService struct {
-	categoryRepo *repository.CategoryRepository
+	categoryRepo CategoryRepo
 
 	// 缓存相关
 	cacheMu    sync.RWMutex
@@ -24,7 +23,7 @@ type CategoryService struct {
 }
 
 // NewCategoryService 创建分类服务
-func NewCategoryService(categoryRepo *repository.CategoryRepository) *CategoryService {
+func NewCategoryService(categoryRepo CategoryRepo) *CategoryService {
 	return &CategoryService{
 		categoryRepo: categoryRepo,
 	}

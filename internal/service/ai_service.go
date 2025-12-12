@@ -15,15 +15,15 @@ import (
 // AIService AI识别服务
 type AIService struct {
 	client          ai.Client
-	billService     *BillService
-	categoryService *CategoryService
+	billService     BillServiceInterface
+	categoryService CategoryServiceInterface
 	maxImageSize    int64
 	workerPool      *ai.WorkerPool
 	batchConfig     *config.BatchConfig
 }
 
 // NewAIService 创建AI服务
-func NewAIService(cfg *config.AIConfig, billService *BillService, categoryService *CategoryService) (*AIService, error) {
+func NewAIService(cfg *config.AIConfig, billService BillServiceInterface, categoryService CategoryServiceInterface) (*AIService, error) {
 	client, err := ai.NewClient(cfg)
 	if err != nil {
 		return nil, err

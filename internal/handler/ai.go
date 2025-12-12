@@ -10,11 +10,11 @@ import (
 
 // AIHandler AI处理器
 type AIHandler struct {
-	aiService *service.AIService
+	aiService service.AIServiceInterface
 }
 
 // NewAIHandler 创建AI处理器
-func NewAIHandler(aiService *service.AIService) *AIHandler {
+func NewAIHandler(aiService service.AIServiceInterface) *AIHandler {
 	return &AIHandler{
 		aiService: aiService,
 	}

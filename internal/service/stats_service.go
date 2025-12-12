@@ -8,17 +8,16 @@ import (
 
 	"smart-ledger-server/internal/model"
 	"smart-ledger-server/internal/model/dto"
-	"smart-ledger-server/internal/repository"
 	"smart-ledger-server/pkg/errcode"
 )
 
 // StatsService 统计服务
 type StatsService struct {
-	billRepo *repository.BillRepository
+	billRepo BillRepo
 }
 
 // NewStatsService 创建统计服务
-func NewStatsService(billRepo *repository.BillRepository) *StatsService {
+func NewStatsService(billRepo BillRepo) *StatsService {
 	return &StatsService{
 		billRepo: billRepo,
 	}

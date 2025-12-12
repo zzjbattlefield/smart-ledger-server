@@ -12,18 +12,17 @@ import (
 	"smart-ledger-server/internal/config"
 	"smart-ledger-server/internal/model"
 	"smart-ledger-server/internal/model/dto"
-	"smart-ledger-server/internal/repository"
 	"smart-ledger-server/pkg/errcode"
 )
 
 // UserService 用户服务
 type UserService struct {
-	userRepo *repository.UserRepository
+	userRepo UserRepo
 	cfg      *config.Config
 }
 
 // NewUserService 创建用户服务
-func NewUserService(userRepo *repository.UserRepository, cfg *config.Config) *UserService {
+func NewUserService(userRepo UserRepo, cfg *config.Config) *UserService {
 	return &UserService{
 		userRepo: userRepo,
 		cfg:      cfg,

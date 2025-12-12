@@ -13,11 +13,11 @@ import (
 
 // BillHandler 账单处理器
 type BillHandler struct {
-	billService *service.BillService
+	billService service.BillServiceInterface
 }
 
 // NewBillHandler 创建账单处理器
-func NewBillHandler(billService *service.BillService) *BillHandler {
+func NewBillHandler(billService service.BillServiceInterface) *BillHandler {
 	return &BillHandler{
 		billService: billService,
 	}

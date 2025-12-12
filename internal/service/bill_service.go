@@ -16,12 +16,12 @@ import (
 
 // BillService 账单服务
 type BillService struct {
-	billRepo     *repository.BillRepository
-	categoryRepo *repository.CategoryRepository
+	billRepo     BillRepo
+	categoryRepo CategoryRepo
 }
 
 // NewBillService 创建账单服务
-func NewBillService(billRepo *repository.BillRepository, categoryRepo *repository.CategoryRepository) *BillService {
+func NewBillService(billRepo BillRepo, categoryRepo CategoryRepo) *BillService {
 	return &BillService{
 		billRepo:     billRepo,
 		categoryRepo: categoryRepo,

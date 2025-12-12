@@ -13,11 +13,11 @@ import (
 
 // CategoryHandler 分类处理器
 type CategoryHandler struct {
-	categoryService *service.CategoryService
+	categoryService service.CategoryServiceInterface
 }
 
 // NewCategoryHandler 创建分类处理器
-func NewCategoryHandler(categoryService *service.CategoryService) *CategoryHandler {
+func NewCategoryHandler(categoryService service.CategoryServiceInterface) *CategoryHandler {
 	return &CategoryHandler{
 		categoryService: categoryService,
 	}
