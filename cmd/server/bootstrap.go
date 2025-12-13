@@ -47,11 +47,12 @@ func mustInitDatabase(cfg *config.DatabaseConfig, log *zap.Logger) *gorm.DB {
 	return database.GetDB()
 }
 
-// mustMigrateDatabase 数据库迁移，失败则退出
+// mustMigrateDatabase 执行数据库迁移，失败则退出
 func mustMigrateDatabase(log *zap.Logger) {
 	if err := database.AutoMigrate(); err != nil {
 		log.Fatal("数据库迁移失败", zap.Error(err))
 	}
+	log.Info("数据库迁移完成")
 }
 
 // initRedisIfConfigured 如果配置了 Redis 则初始化

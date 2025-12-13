@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -11,8 +12,13 @@ import (
 	"smart-ledger-server/pkg/errcode"
 )
 
+// UserExistsChecker 用户存在性检查接口
+type UserExistsChecker interface {
+	ExistsByID(ctx context.Context, id uint64) (bool, error)
+}
+
 // Auth JWT认证中间件
-func Auth(cfg *config.JWTConfig) gin.HandlerFunc {
+func Auth(cfg *config.JWTConfig, userChecker UserExistsChecker) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 获取Authorization头
 		authHeader := c.GetHeader("Authorization")
@@ -74,8 +80,23 @@ func Auth(cfg *config.JWTConfig) gin.HandlerFunc {
 			return
 		}
 
+		userID := uint64(userIDFloat)
+
+		// 验证用户是否存在
+		exists, err := userChecker.ExistsByID(c.Request.Context(), userID)
+		if err != nil {
+			response.Error(c, errcode.ErrServer)
+			c.Abort()
+			return
+		}
+		if !exists {
+			response.Error(c, errcode.ErrUserNotFound)
+			c.Abort()
+			return
+		}
+
 		// 设置用户ID到上下文
-		c.Set("user_id", uint64(userIDFloat))
+		c.Set("user_id", userID)
 		c.Next()
 	}
 }

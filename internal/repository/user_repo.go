@@ -59,3 +59,10 @@ func (r *UserRepository) ExistsByPhone(ctx context.Context, phone string) (bool,
 	err := r.db.WithContext(ctx).Model(&model.User{}).Where("phone = ?", phone).Count(&count).Error
 	return count > 0, err
 }
+
+// ExistsByID 检查用户ID是否存在
+func (r *UserRepository) ExistsByID(ctx context.Context, id uint64) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&model.User{}).Where("id = ?", id).Count(&count).Error
+	return count > 0, err
+}

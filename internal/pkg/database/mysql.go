@@ -1,12 +1,8 @@
 package database
 
 import (
-	"errors"
 	"fmt"
 
-	"github.com/golang-migrate/migrate/v4"
-	mysqlMigrate "github.com/golang-migrate/migrate/v4/database/mysql"
-	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -61,37 +57,14 @@ func GetDB() *gorm.DB {
 	return db
 }
 
-// AutoMigrate 使用 golang-migrate 执行数据库迁移
+// AutoMigrate 使用 goose 执行数据库迁移
 func AutoMigrate() error {
 	sqlDB, err := db.DB()
 	if err != nil {
 		return fmt.Errorf("获取数据库实例失败: %w", err)
 	}
 
-	// 创建迁移文件源
-	source, err := iofs.New(migrations.FS, ".")
-	if err != nil {
-		return fmt.Errorf("创建迁移源失败: %w", err)
-	}
-
-	// 创建数据库驱动
-	driver, err := mysqlMigrate.WithInstance(sqlDB, &mysqlMigrate.Config{})
-	if err != nil {
-		return fmt.Errorf("创建迁移驱动失败: %w", err)
-	}
-
-	// 创建迁移实例
-	m, err := migrate.NewWithInstance("iofs", source, "mysql", driver)
-	if err != nil {
-		return fmt.Errorf("创建迁移实例失败: %w", err)
-	}
-
-	// 执行迁移
-	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		return fmt.Errorf("执行迁移失败: %w", err)
-	}
-
-	return nil
+	return migrations.Run(sqlDB)
 }
 
 // Close 关闭数据库连接

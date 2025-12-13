@@ -52,7 +52,7 @@ func registerUserPublicRoutes(v1 *gin.RouterGroup, ctn *container.Container) {
 // registerAuthenticatedRoutes 注册需要认证的路由
 func registerAuthenticatedRoutes(v1 *gin.RouterGroup, cfg *config.Config, ctn *container.Container) {
 	auth := v1.Group("")
-	auth.Use(middleware.Auth(&cfg.JWT))
+	auth.Use(middleware.Auth(&cfg.JWT, ctn.UserRepo()))
 	{
 		registerUserProtectedRoutes(auth, ctn)
 		registerCategoryRoutes(auth, ctn)
