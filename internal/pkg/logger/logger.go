@@ -9,6 +9,8 @@ import (
 	"smart-ledger-server/internal/config"
 )
 
+var Log *zap.Logger
+
 // Init 初始化日志
 func Init(cfg *config.LogConfig) (*zap.Logger, error) {
 	// 设置日志级别
@@ -67,5 +69,7 @@ func Init(cfg *config.LogConfig) (*zap.Logger, error) {
 	// 创建Logger
 	logger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
 
-	return logger, nil
+	Log = logger
+
+	return Log, nil
 }

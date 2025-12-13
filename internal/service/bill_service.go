@@ -6,10 +6,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 
 	"smart-ledger-server/internal/model"
 	"smart-ledger-server/internal/model/dto"
+	"smart-ledger-server/internal/pkg/logger"
 	"smart-ledger-server/internal/repository"
 	"smart-ledger-server/pkg/errcode"
 )
@@ -80,6 +82,15 @@ func (s *BillService) CreateFromAI(ctx context.Context, userID uint64, aiResult 
 			categoryID = &category.ID
 		}
 	}
+	payTime := time.Now()
+	if aiResult.PayTime != "" {
+		local, _ := time.LoadLocation("Asia/Shanghai")
+		if parseTime, err := time.ParseInLocation(time.RFC3339, aiResult.PayTime, local); err == nil {
+			payTime = parseTime
+		} else {
+			logger.Log.Info("解析账单支付时间出现错误", zap.String("aiResult下的paytime", aiResult.PayTime), zap.Error(err))
+		}
+	}
 
 	bill := &model.Bill{
 		UUID:        uuid.New().String(),
@@ -89,7 +100,7 @@ func (s *BillService) CreateFromAI(ctx context.Context, userID uint64, aiResult 
 		Platform:    aiResult.Platform,
 		Merchant:    aiResult.Merchant,
 		CategoryID:  categoryID,
-		PayTime:     aiResult.PayTime,
+		PayTime:     payTime,
 		PayMethod:   aiResult.PayMethod,
 		OrderNo:     aiResult.OrderNo,
 		ImagePath:   imagePath,

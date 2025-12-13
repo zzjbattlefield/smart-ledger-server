@@ -66,16 +66,16 @@ type BillListResponse struct {
 
 // AIRecognizeResponse AI识别响应
 type AIRecognizeResponse struct {
-	Platform    string                   `json:"platform"`
-	Amount      decimal.Decimal          `json:"amount"`
-	Merchant    string                   `json:"merchant"`
-	Category    string                   `json:"category"`
-	SubCategory string                   `json:"sub_category"`
-	PayTime     time.Time                `json:"pay_time"`
-	PayMethod   string                   `json:"pay_method"`
-	OrderNo     string                   `json:"order_no"`
+	Platform    string                    `json:"platform"`
+	Amount      decimal.Decimal           `json:"amount"`
+	Merchant    string                    `json:"merchant"`
+	Category    string                    `json:"category"`
+	SubCategory string                    `json:"sub_category"`
+	PayTime     string                    `json:"pay_time"`
+	PayMethod   string                    `json:"pay_method"`
+	OrderNo     string                    `json:"order_no"`
 	Items       []AIRecognizeItemResponse `json:"items,omitempty"`
-	Confidence  float64                  `json:"confidence"`
+	Confidence  float64                   `json:"confidence"`
 }
 
 // AIRecognizeItemResponse AI识别明细响应
@@ -89,13 +89,13 @@ type AIRecognizeItemResponse struct {
 
 // StatsSummaryResponse 统计摘要响应
 type StatsSummaryResponse struct {
-	Period        string                `json:"period"`
-	TotalExpense  decimal.Decimal       `json:"total_expense"`
-	TotalIncome   decimal.Decimal       `json:"total_income"`
-	BillCount     int64                 `json:"bill_count"`
-	DailyAverage  decimal.Decimal       `json:"daily_average"`
-	TopCategories []CategoryStatsItem   `json:"top_categories"`
-	Trend         []TrendItem           `json:"trend"`
+	Period        string              `json:"period"`
+	TotalExpense  decimal.Decimal     `json:"total_expense"`
+	TotalIncome   decimal.Decimal     `json:"total_income"`
+	BillCount     int64               `json:"bill_count"`
+	DailyAverage  decimal.Decimal     `json:"daily_average"`
+	TopCategories []CategoryStatsItem `json:"top_categories"`
+	Trend         []TrendItem         `json:"trend"`
 }
 
 // CategoryStatsItem 分类统计项
@@ -144,12 +144,12 @@ type BatchRecognizeResponse struct {
 
 // BatchItemResult 批量识别单项结果
 type BatchItemResult struct {
-	Index    int                  `json:"index"`              // 图片索引
-	FileName string               `json:"file_name"`          // 文件名
-	Success  bool                 `json:"success"`            // 是否成功
-	Data     *AIRecognizeResponse `json:"data,omitempty"`     // 识别结果
-	Error    string               `json:"error,omitempty"`    // 错误信息
-	Duration int64                `json:"duration"`           // 处理耗时(ms)
+	Index    int                  `json:"index"`           // 图片索引
+	FileName string               `json:"file_name"`       // 文件名
+	Success  bool                 `json:"success"`         // 是否成功
+	Data     *AIRecognizeResponse `json:"data,omitempty"`  // 识别结果
+	Error    string               `json:"error,omitempty"` // 错误信息
+	Duration int64                `json:"duration"`        // 处理耗时(ms)
 }
 
 // BatchRecognizeAndSaveResponse 批量识别并保存响应
@@ -162,9 +162,9 @@ type BatchRecognizeAndSaveResponse struct {
 
 // BatchItemSaveResult 批量保存单项结果
 type BatchItemSaveResult struct {
-	Index    int           `json:"index"`              // 图片索引
-	FileName string        `json:"file_name"`          // 文件名
-	Success  bool          `json:"success"`            // 是否成功
-	Bill     *BillResponse `json:"bill,omitempty"`     // 账单（成功时）
-	Error    string        `json:"error,omitempty"`    // 错误信息
+	Index    int           `json:"index"`           // 图片索引
+	FileName string        `json:"file_name"`       // 文件名
+	Success  bool          `json:"success"`         // 是否成功
+	Bill     *BillResponse `json:"bill,omitempty"`  // 账单（成功时）
+	Error    string        `json:"error,omitempty"` // 错误信息
 }

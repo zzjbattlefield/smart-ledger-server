@@ -8,6 +8,7 @@ import (
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
 	"github.com/openai/openai-go/shared"
+	pkgerrors "github.com/pkg/errors"
 
 	"smart-ledger-server/internal/config"
 	"smart-ledger-server/internal/model/dto"
@@ -79,11 +80,14 @@ func (c *OpenAIClient) RecognizePayment(ctx context.Context, imageData []byte, m
 
 	content := resp.Choices[0].Message.Content
 
-	// 解析 JSON 结果
-	var result dto.AIRecognizeResponse
-	if err := json.Unmarshal([]byte(content), &result); err != nil {
-		return nil, fmt.Errorf("解析 AI 返回结果失败: %w, content: %s", err, content)
-	}
+	return ParseAiResponse(content)
+}
 
-	return &result, nil
+func ParseAiResponse(content string) (result *dto.AIRecognizeResponse, err error) {
+	result = &dto.AIRecognizeResponse{}
+	err = json.Unmarshal([]byte(content), result)
+	if err != nil {
+		err = pkgerrors.Wrap(err, "解析 AI 返回结果失败")
+	}
+	return
 }
