@@ -206,6 +206,7 @@ func (r *BillRepository) GetCategoryStats(ctx context.Context, userID uint64, bi
 		Where("bills.user_id = ? AND bills.bill_type = ? AND bills.pay_time >= ? AND bills.pay_time <= ?",
 			userID, billType, startDate, endDate).
 		Group("category_id").
+		Group("category_name").
 		Order("amount DESC").
 		Scan(&stats).Error
 	return stats, err
@@ -213,7 +214,7 @@ func (r *BillRepository) GetCategoryStats(ctx context.Context, userID uint64, bi
 
 // DailyStats 每日统计结果
 type DailyStats struct {
-	Date    string
+	Date    time.Time
 	Expense decimal.Decimal
 	Income  decimal.Decimal
 }

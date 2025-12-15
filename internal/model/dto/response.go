@@ -108,7 +108,7 @@ type CategoryStatsItem struct {
 
 // TrendItem 趋势项
 type TrendItem struct {
-	Date    string          `json:"date"`
+	Date    DateOnly        `json:"date"`
 	Expense decimal.Decimal `json:"expense"`
 	Income  decimal.Decimal `json:"income"`
 }
@@ -129,4 +129,19 @@ type CategoryResponse struct {
 	Icon      string             `json:"icon"`
 	SortOrder int                `json:"sort_order"`
 	Children  []CategoryResponse `json:"children,omitempty"`
+}
+
+type DateOnly time.Time
+
+func (d *DateOnly) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + time.Time(*d).Format("2006-01-02") + `"`), nil
+}
+
+func (d *DateOnly) UnmarshalJSON(data []byte) error {
+	t, err := time.Parse(`"2006-01-02"`, string(data))
+	if err != nil {
+		return err
+	}
+	*d = DateOnly(t)
+	return nil
 }

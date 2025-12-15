@@ -58,7 +58,7 @@ func (s *StatsService) GetSummary(ctx context.Context, userID uint64, req *dto.S
 		topCategories[i] = dto.CategoryStatsItem{
 			ID:      stat.CategoryID,
 			Name:    stat.CategoryName,
-			Amount:  stat.Amount,
+			Amount:  stat.Amount.Round(2),
 			Percent: percent,
 		}
 	}
@@ -72,7 +72,7 @@ func (s *StatsService) GetSummary(ctx context.Context, userID uint64, req *dto.S
 	trend := make([]dto.TrendItem, len(dailyStats))
 	for i, stat := range dailyStats {
 		trend[i] = dto.TrendItem{
-			Date:    stat.Date,
+			Date:    dto.DateOnly(stat.Date),
 			Expense: stat.Expense,
 			Income:  stat.Income,
 		}
@@ -80,10 +80,10 @@ func (s *StatsService) GetSummary(ctx context.Context, userID uint64, req *dto.S
 
 	return &dto.StatsSummaryResponse{
 		Period:        req.Date,
-		TotalExpense:  summary.TotalExpense,
-		TotalIncome:   summary.TotalIncome,
+		TotalExpense:  summary.TotalExpense.Round(2),
+		TotalIncome:   summary.TotalIncome.Round(2),
 		BillCount:     summary.BillCount,
-		DailyAverage:  dailyAverage,
+		DailyAverage:  dailyAverage.Round(2),
 		TopCategories: topCategories,
 		Trend:         trend,
 	}, nil
@@ -112,7 +112,7 @@ func (s *StatsService) GetCategoryStats(ctx context.Context, userID uint64, req 
 	for i, stat := range categoryStats {
 		percent := 0.0
 		if !total.IsZero() {
-			percent, _ = stat.Amount.Div(total).Mul(decimal.NewFromInt(100)).Float64()
+			percent, _ = stat.Amount.Div(total).Mul(decimal.NewFromInt(100)).Round(2).Float64()
 		}
 		categories[i] = dto.CategoryStatsItem{
 			ID:      stat.CategoryID,
