@@ -4,10 +4,10 @@ package model
 type Category struct {
 	BaseModel
 	Name      string `gorm:"type:varchar(50);not null" json:"name"`
+	UserID    uint64 `gorm:"index;not null" json:"user_id"`
 	ParentID  uint64 `gorm:"default:0;index" json:"parent_id"`
 	Icon      string `gorm:"type:varchar(100)" json:"icon"`
 	SortOrder int    `gorm:"default:0" json:"sort_order"`
-	IsSystem  bool   `gorm:"default:false" json:"is_system"`
 
 	// 关联
 	Parent   *Category  `gorm:"foreignKey:ParentID" json:"parent,omitempty"`

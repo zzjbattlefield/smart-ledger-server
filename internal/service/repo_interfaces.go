@@ -25,12 +25,16 @@ type UserRepo interface {
 type CategoryRepo interface {
 	Create(ctx context.Context, category *model.Category) error
 	GetByID(ctx context.Context, id uint64) (*model.Category, error)
-	GetWithChildren(ctx context.Context) ([]model.Category, error)
+	GetWithChildren(ctx context.Context, userID uint64) ([]model.Category, error)
 	Update(ctx context.Context, category *model.Category) error
 	Delete(ctx context.Context, id uint64) error
-	HasChildren(ctx context.Context, id uint64) (bool, error)
-	ExistsByName(ctx context.Context, name string, parentID uint64, excludeID uint64) (bool, error)
-	GetByName(ctx context.Context, name string) (*model.Category, error)
+	HasChildren(ctx context.Context, userID, id uint64) (bool, error)
+	ExistsByName(ctx context.Context, name string, userID, parentID uint64) (bool, error)
+	GetByName(ctx context.Context, userID uint64, name string) (*model.Category, error)
+}
+
+type CategoryTemplateRepo interface {
+	GetAll(ctx context.Context) ([]model.CategoryTemplate, error)
 }
 
 // BillRepo 账单仓库接口

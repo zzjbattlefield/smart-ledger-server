@@ -38,8 +38,8 @@ func (h *CategoryHandler) Create(c *gin.Context) {
 		response.ParamError(c, err.Error())
 		return
 	}
-
-	resp, err := h.categoryService.Create(c.Request.Context(), &req)
+	userID := c.GetUint64("user_id")
+	resp, err := h.categoryService.Create(c.Request.Context(), userID, &req)
 	if err != nil {
 		if e, ok := err.(*errcode.ErrCode); ok {
 			response.Error(c, e)
@@ -57,6 +57,7 @@ func (h *CategoryHandler) Create(c *gin.Context) {
 // @Tags 分类
 // @Accept json
 // @Produce json
+// @Security Bearer
 // @Param id path int true "分类ID"
 // @Success 200 {object} response.Response{data=dto.CategoryResponse}
 // @Router /categories/{id} [get]
@@ -67,7 +68,8 @@ func (h *CategoryHandler) Get(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.categoryService.GetByID(c.Request.Context(), id)
+	userID := c.GetUint64("user_id")
+	resp, err := h.categoryService.GetByID(c.Request.Context(), userID, id)
 	if err != nil {
 		if e, ok := err.(*errcode.ErrCode); ok {
 			response.Error(c, e)
@@ -88,7 +90,8 @@ func (h *CategoryHandler) Get(c *gin.Context) {
 // @Success 200 {object} response.Response{data=[]dto.CategoryResponse}
 // @Router /categories [get]
 func (h *CategoryHandler) List(c *gin.Context) {
-	resp, err := h.categoryService.List(c.Request.Context())
+	userID := c.GetUint64("user_id")
+	resp, err := h.categoryService.List(c.Request.Context(), userID)
 	if err != nil {
 		if e, ok := err.(*errcode.ErrCode); ok {
 			response.Error(c, e)
@@ -124,7 +127,8 @@ func (h *CategoryHandler) Update(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.categoryService.Update(c.Request.Context(), id, &req)
+	userID := c.GetUint64("user_id")
+	resp, err := h.categoryService.Update(c.Request.Context(), userID, id, &req)
 	if err != nil {
 		if e, ok := err.(*errcode.ErrCode); ok {
 			response.Error(c, e)
@@ -153,7 +157,8 @@ func (h *CategoryHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	if err := h.categoryService.Delete(c.Request.Context(), id); err != nil {
+	userID := c.GetUint64("user_id")
+	if err := h.categoryService.Delete(c.Request.Context(), userID, id); err != nil {
 		if e, ok := err.(*errcode.ErrCode); ok {
 			response.Error(c, e)
 			return

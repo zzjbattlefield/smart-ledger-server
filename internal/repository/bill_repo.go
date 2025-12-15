@@ -120,7 +120,7 @@ func (r *BillRepository) List(ctx context.Context, query *BillQuery) ([]model.Bi
 	// 分页查询
 	offset := (query.Page - 1) * query.PageSize
 	err := db.
-		Preload("Category").
+		Preload("Category", "user_id = ?", query.UserID).
 		Order("pay_time DESC").
 		Offset(offset).
 		Limit(query.PageSize).
@@ -202,7 +202,7 @@ func (r *BillRepository) GetCategoryStats(ctx context.Context, userID uint64, bi
 	var stats []CategoryStats
 	err := r.db.WithContext(ctx).Model(&model.Bill{}).
 		Select("category_id, categories.name as category_name, SUM(bills.amount) as amount").
-		Joins("LEFT JOIN categories ON bills.category_id = categories.id").
+		Joins("LEFT JOIN categories ON bills.category_id = categories.id AND categories.user_id = bills.user_id").
 		Where("bills.user_id = ? AND bills.bill_type = ? AND bills.pay_time >= ? AND bills.pay_time <= ?",
 			userID, billType, startDate, endDate).
 		Group("category_id").

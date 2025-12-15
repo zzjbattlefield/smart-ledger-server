@@ -14,25 +14,31 @@ import (
 
 // CategoryService 分类服务
 type CategoryService struct {
-	categoryRepo CategoryRepo
-
+	categoryRepo         CategoryRepo
+	categoryTemplateRepo CategoryTemplateRepo
 	// 缓存相关
-	cacheMu    sync.RWMutex
-	cache      []model.Category
-	cacheValid bool
+	cacheMu sync.RWMutex
+	cache   map[uint64]categoryCacheEntry
+}
+
+type categoryCacheEntry struct {
+	categories []model.Category
+	valid      bool
 }
 
 // NewCategoryService 创建分类服务
-func NewCategoryService(categoryRepo CategoryRepo) *CategoryService {
+func NewCategoryService(categoryRepo CategoryRepo, categoryTemplateRepo CategoryTemplateRepo) *CategoryService {
 	return &CategoryService{
-		categoryRepo: categoryRepo,
+		categoryRepo:         categoryRepo,
+		categoryTemplateRepo: categoryTemplateRepo,
+		cache:                make(map[uint64]categoryCacheEntry),
 	}
 }
 
 // Create 创建分类
-func (s *CategoryService) Create(ctx context.Context, req *dto.CreateCategoryRequest) (*dto.CategoryResponse, error) {
+func (s *CategoryService) Create(ctx context.Context, userID uint64, req *dto.CreateCategoryRequest) (*dto.CategoryResponse, error) {
 	// 检查名称是否重复
-	exists, err := s.categoryRepo.ExistsByName(ctx, req.Name, req.ParentID, 0)
+	exists, err := s.categoryRepo.ExistsByName(ctx, req.Name, userID, req.ParentID)
 	if err != nil {
 		return nil, errcode.ErrServer
 	}
@@ -42,21 +48,24 @@ func (s *CategoryService) Create(ctx context.Context, req *dto.CreateCategoryReq
 
 	// 如果有父分类，检查父分类是否存在
 	if req.ParentID > 0 {
-		_, err := s.categoryRepo.GetByID(ctx, req.ParentID)
+		parent, err := s.categoryRepo.GetByID(ctx, req.ParentID)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil, errcode.ErrCategoryNotFound.WithMessage("父分类不存在")
 			}
 			return nil, errcode.ErrServer
 		}
+		if parent.UserID != userID {
+			return nil, errcode.ErrCategoryNotFound.WithMessage("父分类不存在")
+		}
 	}
 
 	category := &model.Category{
 		Name:      req.Name,
 		ParentID:  req.ParentID,
+		UserID:    userID,
 		Icon:      req.Icon,
 		SortOrder: req.SortOrder,
-		IsSystem:  false,
 	}
 
 	if err := s.categoryRepo.Create(ctx, category); err != nil {
@@ -64,13 +73,13 @@ func (s *CategoryService) Create(ctx context.Context, req *dto.CreateCategoryReq
 	}
 
 	// 使缓存失效
-	s.invalidateCache()
+	s.invalidateCache(userID)
 
 	return s.toCategoryResponse(category), nil
 }
 
 // GetByID 获取分类详情
-func (s *CategoryService) GetByID(ctx context.Context, id uint64) (*dto.CategoryResponse, error) {
+func (s *CategoryService) GetByID(ctx context.Context, userID, id uint64) (*dto.CategoryResponse, error) {
 	category, err := s.categoryRepo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -79,12 +88,17 @@ func (s *CategoryService) GetByID(ctx context.Context, id uint64) (*dto.Category
 		return nil, errcode.ErrServer
 	}
 
+	// 检查权限
+	if category.UserID != userID {
+		return nil, errcode.ErrForbidden
+	}
+
 	return s.toCategoryResponse(category), nil
 }
 
 // List 获取分类列表（树形结构）
-func (s *CategoryService) List(ctx context.Context) ([]dto.CategoryResponse, error) {
-	categories, err := s.categoryRepo.GetWithChildren(ctx)
+func (s *CategoryService) List(ctx context.Context, userID uint64) ([]dto.CategoryResponse, error) {
+	categories, err := s.categoryRepo.GetWithChildren(ctx, userID)
 	if err != nil {
 		return nil, errcode.ErrServer
 	}
@@ -98,7 +112,7 @@ func (s *CategoryService) List(ctx context.Context) ([]dto.CategoryResponse, err
 }
 
 // Update 更新分类
-func (s *CategoryService) Update(ctx context.Context, id uint64, req *dto.UpdateCategoryRequest) (*dto.CategoryResponse, error) {
+func (s *CategoryService) Update(ctx context.Context, userID, id uint64, req *dto.UpdateCategoryRequest) (*dto.CategoryResponse, error) {
 	category, err := s.categoryRepo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -107,14 +121,14 @@ func (s *CategoryService) Update(ctx context.Context, id uint64, req *dto.Update
 		return nil, errcode.ErrServer
 	}
 
-	// 系统分类不可修改
-	if category.IsSystem {
-		return nil, errcode.ErrCategoryIsSystem
+	// 检查权限
+	if category.UserID != userID {
+		return nil, errcode.ErrForbidden
 	}
 
 	// 检查名称是否重复
 	if req.Name != "" && req.Name != category.Name {
-		exists, err := s.categoryRepo.ExistsByName(ctx, req.Name, category.ParentID, id)
+		exists, err := s.categoryRepo.ExistsByName(ctx, req.Name, category.UserID, category.ParentID)
 		if err != nil {
 			return nil, errcode.ErrServer
 		}
@@ -136,13 +150,13 @@ func (s *CategoryService) Update(ctx context.Context, id uint64, req *dto.Update
 	}
 
 	// 使缓存失效
-	s.invalidateCache()
+	s.invalidateCache(userID)
 
 	return s.toCategoryResponse(category), nil
 }
 
 // Delete 删除分类
-func (s *CategoryService) Delete(ctx context.Context, id uint64) error {
+func (s *CategoryService) Delete(ctx context.Context, userID, id uint64) error {
 	category, err := s.categoryRepo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -151,13 +165,13 @@ func (s *CategoryService) Delete(ctx context.Context, id uint64) error {
 		return errcode.ErrServer
 	}
 
-	// 系统分类不可删除
-	if category.IsSystem {
-		return errcode.ErrCategoryIsSystem
+	// 检查权限
+	if category.UserID != userID {
+		return errcode.ErrForbidden
 	}
 
 	// 检查是否有子分类
-	hasChildren, err := s.categoryRepo.HasChildren(ctx, id)
+	hasChildren, err := s.categoryRepo.HasChildren(ctx, userID, id)
 	if err != nil {
 		return errcode.ErrServer
 	}
@@ -170,14 +184,14 @@ func (s *CategoryService) Delete(ctx context.Context, id uint64) error {
 	}
 
 	// 使缓存失效
-	s.invalidateCache()
+	s.invalidateCache(userID)
 
 	return nil
 }
 
 // GetByName 根据名称获取分类
-func (s *CategoryService) GetByName(ctx context.Context, name string) (*model.Category, error) {
-	return s.categoryRepo.GetByName(ctx, name)
+func (s *CategoryService) GetByName(ctx context.Context, userID uint64, name string) (*model.Category, error) {
+	return s.categoryRepo.GetByName(ctx, userID, name)
 }
 
 // toCategoryResponse 转换为分类响应
@@ -188,7 +202,6 @@ func (s *CategoryService) toCategoryResponse(category *model.Category) *dto.Cate
 		ParentID:  category.ParentID,
 		Icon:      category.Icon,
 		SortOrder: category.SortOrder,
-		IsSystem:  category.IsSystem,
 	}
 }
 
@@ -205,41 +218,85 @@ func (s *CategoryService) toCategoryResponseWithChildren(category *model.Categor
 }
 
 // GetCategoriesForAI 获取分类数据（带缓存，供 AI 识别使用）
-func (s *CategoryService) GetCategoriesForAI(ctx context.Context) ([]model.Category, error) {
+func (s *CategoryService) GetCategoriesForAI(ctx context.Context, userID uint64) ([]model.Category, error) {
 	s.cacheMu.RLock()
-	if s.cacheValid {
-		defer s.cacheMu.RUnlock()
-		return s.cache, nil
+	if entry, ok := s.cache[userID]; ok && entry.valid {
+		categories := entry.categories
+		s.cacheMu.RUnlock()
+		return categories, nil
 	}
 	s.cacheMu.RUnlock()
 
 	// 缓存未命中，重新加载
-	return s.refreshCache(ctx)
+	return s.refreshCache(ctx, userID)
 }
 
 // refreshCache 刷新缓存
-func (s *CategoryService) refreshCache(ctx context.Context) ([]model.Category, error) {
+func (s *CategoryService) refreshCache(ctx context.Context, userID uint64) ([]model.Category, error) {
 	s.cacheMu.Lock()
 	defer s.cacheMu.Unlock()
 
 	// 双重检查，避免重复加载
-	if s.cacheValid {
-		return s.cache, nil
+	if entry, ok := s.cache[userID]; ok && entry.valid {
+		return entry.categories, nil
 	}
 
-	categories, err := s.categoryRepo.GetWithChildren(ctx)
+	categories, err := s.categoryRepo.GetWithChildren(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	s.cache = categories
-	s.cacheValid = true
+	s.cache[userID] = categoryCacheEntry{
+		categories: categories,
+		valid:      true,
+	}
 	return categories, nil
 }
 
-// invalidateCache 使缓存失效
-func (s *CategoryService) invalidateCache() {
+// invalidateCache 使缓存失效（按用户维度）
+func (s *CategoryService) invalidateCache(userID uint64) {
 	s.cacheMu.Lock()
 	defer s.cacheMu.Unlock()
-	s.cacheValid = false
+	delete(s.cache, userID)
+}
+
+// InitFromTemplate 从模板初始化用户分类
+func (s *CategoryService) InitFromTemplate(ctx context.Context, userID uint64) error {
+	templates, err := s.categoryTemplateRepo.GetAll(ctx)
+	if err != nil {
+		return err
+	}
+	idMap := make(map[uint64]uint64)
+	for _, t := range templates {
+		if t.ParentID == 0 {
+			parentTemplate := model.Category{
+				Name:      t.Name,
+				ParentID:  0,
+				UserID:    userID,
+				Icon:      t.Icon,
+				SortOrder: t.SortOrder,
+			}
+			if err := s.categoryRepo.Create(ctx, &parentTemplate); err != nil {
+				return err
+			}
+			idMap[t.ID] = parentTemplate.ID
+		}
+	}
+	for _, t := range templates {
+		if t.ParentID != 0 {
+			parentID := idMap[t.ParentID]
+			childTemplate := model.Category{
+				Name:      t.Name,
+				ParentID:  parentID,
+				UserID:    userID,
+				Icon:      t.Icon,
+				SortOrder: t.SortOrder,
+			}
+			if err := s.categoryRepo.Create(ctx, &childTemplate); err != nil {
+				return err
+			}
+		}
+	}
+	s.invalidateCache(userID)
+	return nil
 }

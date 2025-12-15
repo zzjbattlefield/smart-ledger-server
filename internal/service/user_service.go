@@ -17,15 +17,17 @@ import (
 
 // UserService 用户服务
 type UserService struct {
-	userRepo UserRepo
-	cfg      *config.Config
+	userRepo        UserRepo
+	categoryService CategoryServiceInterface
+	cfg             *config.Config
 }
 
 // NewUserService 创建用户服务
-func NewUserService(userRepo UserRepo, cfg *config.Config) *UserService {
+func NewUserService(userRepo UserRepo, categoriesService CategoryServiceInterface, cfg *config.Config) *UserService {
 	return &UserService{
-		userRepo: userRepo,
-		cfg:      cfg,
+		userRepo:        userRepo,
+		categoryService: categoriesService,
+		cfg:             cfg,
 	}
 }
 
@@ -60,6 +62,8 @@ func (s *UserService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 		return nil, errcode.ErrServer
 	}
 
+	//生成初始分类
+	s.categoryService.InitFromTemplate(ctx, user.ID)
 	// 生成Token
 	return s.generateLoginResponse(user)
 }

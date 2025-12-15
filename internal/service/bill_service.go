@@ -32,6 +32,22 @@ func NewBillService(billRepo BillRepo, categoryRepo CategoryRepo) *BillService {
 
 // Create 创建账单
 func (s *BillService) Create(ctx context.Context, userID uint64, req *dto.CreateBillRequest) (*dto.BillResponse, error) {
+	// 校验分类归属（用户级分类）
+	var categoryID *uint64
+	if req.CategoryID != nil && *req.CategoryID != 0 {
+		category, err := s.categoryRepo.GetByID(ctx, *req.CategoryID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, errcode.ErrCategoryNotFound
+			}
+			return nil, errcode.ErrServer
+		}
+		if category.UserID != userID {
+			return nil, errcode.ErrCategoryNotFound
+		}
+		categoryID = req.CategoryID
+	}
+
 	bill := &model.Bill{
 		UUID:       uuid.New().String(),
 		UserID:     userID,
@@ -39,7 +55,7 @@ func (s *BillService) Create(ctx context.Context, userID uint64, req *dto.Create
 		BillType:   model.BillType(req.BillType),
 		Platform:   req.Platform,
 		Merchant:   req.Merchant,
-		CategoryID: req.CategoryID,
+		CategoryID: categoryID,
 		PayTime:    req.PayTime,
 		PayMethod:  req.PayMethod,
 		OrderNo:    req.OrderNo,
@@ -71,13 +87,13 @@ func (s *BillService) CreateFromAI(ctx context.Context, userID uint64, aiResult 
 	// 查找分类
 	var categoryID *uint64
 	if aiResult.SubCategory != "" {
-		category, err := s.categoryRepo.GetByName(ctx, aiResult.SubCategory)
+		category, err := s.categoryRepo.GetByName(ctx, userID, aiResult.SubCategory)
 		if err == nil {
 			categoryID = &category.ID
 		}
 	}
 	if categoryID == nil && aiResult.Category != "" {
-		category, err := s.categoryRepo.GetByName(ctx, aiResult.Category)
+		category, err := s.categoryRepo.GetByName(ctx, userID, aiResult.Category)
 		if err == nil {
 			categoryID = &category.ID
 		}
@@ -227,7 +243,22 @@ func (s *BillService) Update(ctx context.Context, userID, id uint64, req *dto.Up
 		bill.Merchant = req.Merchant
 	}
 	if req.CategoryID != nil {
-		bill.CategoryID = req.CategoryID
+		if *req.CategoryID == 0 {
+			bill.CategoryID = nil
+		} else {
+			category, err := s.categoryRepo.GetByID(ctx, *req.CategoryID)
+			if err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return nil, errcode.ErrCategoryNotFound
+				}
+				return nil, errcode.ErrServer
+			}
+			if category.UserID != userID {
+				return nil, errcode.ErrCategoryNotFound
+			}
+			bill.CategoryID = req.CategoryID
+			bill.Category = nil
+		}
 	}
 	if req.PayTime != nil {
 		bill.PayTime = *req.PayTime
@@ -293,10 +324,13 @@ func (s *BillService) toBillResponse(bill *model.Bill) *dto.BillResponse {
 	}
 
 	if bill.Category != nil {
-		resp.Category = &dto.CategoryResponse{
-			ID:   bill.Category.ID,
-			Name: bill.Category.Name,
-			Icon: bill.Category.Icon,
+		// 防御性：避免账单错误关联到其他用户的分类
+		if bill.Category.UserID == bill.UserID {
+			resp.Category = &dto.CategoryResponse{
+				ID:   bill.Category.ID,
+				Name: bill.Category.Name,
+				Icon: bill.Category.Icon,
+			}
 		}
 	}
 

@@ -18,9 +18,10 @@ type Container struct {
 	logger *zap.Logger
 
 	// Repositories
-	userRepo     *repository.UserRepository
-	categoryRepo *repository.CategoryRepository
-	billRepo     *repository.BillRepository
+	userRepo             *repository.UserRepository
+	categoryRepo         *repository.CategoryRepository
+	billRepo             *repository.BillRepository
+	categoryTemplateRepo *repository.CategoryTemplateRepository
 
 	// Services
 	userService     *service.UserService
@@ -55,12 +56,13 @@ func (c *Container) initRepositories() {
 	c.userRepo = repository.NewUserRepository(c.db)
 	c.categoryRepo = repository.NewCategoryRepository(c.db)
 	c.billRepo = repository.NewBillRepository(c.db)
+	c.categoryTemplateRepo = repository.NewCategoryTemplateRepository(c.db)
 }
 
 // initServices 初始化所有 Services
 func (c *Container) initServices() {
-	c.userService = service.NewUserService(c.userRepo, c.cfg)
-	c.categoryService = service.NewCategoryService(c.categoryRepo)
+	c.categoryService = service.NewCategoryService(c.categoryRepo, c.categoryTemplateRepo)
+	c.userService = service.NewUserService(c.userRepo, c.categoryService, c.cfg)
 	c.billService = service.NewBillService(c.billRepo, c.categoryRepo)
 	c.statsService = service.NewStatsService(c.billRepo)
 

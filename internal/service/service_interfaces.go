@@ -20,12 +20,13 @@ type UserServiceInterface interface {
 
 // CategoryServiceInterface 分类服务接口（供 Handler 依赖）
 type CategoryServiceInterface interface {
-	Create(ctx context.Context, req *dto.CreateCategoryRequest) (*dto.CategoryResponse, error)
-	GetByID(ctx context.Context, id uint64) (*dto.CategoryResponse, error)
-	List(ctx context.Context) ([]dto.CategoryResponse, error)
-	Update(ctx context.Context, id uint64, req *dto.UpdateCategoryRequest) (*dto.CategoryResponse, error)
-	Delete(ctx context.Context, id uint64) error
-	GetCategoriesForAI(ctx context.Context) ([]model.Category, error)
+	Create(ctx context.Context, userID uint64, req *dto.CreateCategoryRequest) (*dto.CategoryResponse, error)
+	GetByID(ctx context.Context, userID, id uint64) (*dto.CategoryResponse, error)
+	List(ctx context.Context, userID uint64) ([]dto.CategoryResponse, error)
+	Update(ctx context.Context, userID, id uint64, req *dto.UpdateCategoryRequest) (*dto.CategoryResponse, error)
+	Delete(ctx context.Context, userID, id uint64) error
+	GetCategoriesForAI(ctx context.Context, userID uint64) ([]model.Category, error)
+	InitFromTemplate(ctx context.Context, userID uint64) error
 }
 
 // BillServiceInterface 账单服务接口（供 Handler 依赖）
@@ -46,8 +47,6 @@ type StatsServiceInterface interface {
 
 // AIServiceInterface AI服务接口（供 Handler 依赖）
 type AIServiceInterface interface {
-	RecognizeImage(ctx context.Context, file *multipart.FileHeader) (*dto.AIRecognizeResponse, error)
+	RecognizeImage(ctx context.Context, userID uint64, file *multipart.FileHeader) (*dto.AIRecognizeResponse, error)
 	RecognizeAndCreateBill(ctx context.Context, userID uint64, file *multipart.FileHeader) (*dto.BillResponse, error)
-	BatchRecognizeImages(ctx context.Context, files []*multipart.FileHeader) (*dto.BatchRecognizeResponse, error)
-	BatchRecognizeAndSave(ctx context.Context, userID uint64, files []*multipart.FileHeader) (*dto.BatchRecognizeAndSaveResponse, error)
 }

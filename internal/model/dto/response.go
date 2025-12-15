@@ -128,43 +128,5 @@ type CategoryResponse struct {
 	ParentID  uint64             `json:"parent_id"`
 	Icon      string             `json:"icon"`
 	SortOrder int                `json:"sort_order"`
-	IsSystem  bool               `json:"is_system"`
 	Children  []CategoryResponse `json:"children,omitempty"`
-}
-
-// =============== 批量识别相关 ===============
-
-// BatchRecognizeResponse 批量识别响应
-type BatchRecognizeResponse struct {
-	Total        int               `json:"total"`         // 总数
-	SuccessCount int               `json:"success_count"` // 成功数
-	FailCount    int               `json:"fail_count"`    // 失败数
-	Results      []BatchItemResult `json:"results"`       // 结果列表
-}
-
-// BatchItemResult 批量识别单项结果
-type BatchItemResult struct {
-	Index    int                  `json:"index"`           // 图片索引
-	FileName string               `json:"file_name"`       // 文件名
-	Success  bool                 `json:"success"`         // 是否成功
-	Data     *AIRecognizeResponse `json:"data,omitempty"`  // 识别结果
-	Error    string               `json:"error,omitempty"` // 错误信息
-	Duration int64                `json:"duration"`        // 处理耗时(ms)
-}
-
-// BatchRecognizeAndSaveResponse 批量识别并保存响应
-type BatchRecognizeAndSaveResponse struct {
-	Total        int                   `json:"total"`         // 总数
-	SuccessCount int                   `json:"success_count"` // 成功数
-	FailCount    int                   `json:"fail_count"`    // 失败数
-	Results      []BatchItemSaveResult `json:"results"`       // 结果列表
-}
-
-// BatchItemSaveResult 批量保存单项结果
-type BatchItemSaveResult struct {
-	Index    int           `json:"index"`           // 图片索引
-	FileName string        `json:"file_name"`       // 文件名
-	Success  bool          `json:"success"`         // 是否成功
-	Bill     *BillResponse `json:"bill,omitempty"`  // 账单（成功时）
-	Error    string        `json:"error,omitempty"` // 错误信息
 }
