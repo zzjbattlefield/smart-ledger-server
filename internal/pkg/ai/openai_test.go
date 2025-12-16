@@ -91,7 +91,7 @@ func TestOpenAIClient_RecognizePayment_Integration(t *testing.T) {
 	testConfig := &config.AIConfig{
 		APIKey:  apikey,
 		BaseURL: baseurl,
-		Model:   "Qwen/Qwen3-VL-8B-Instruct",
+		Model:   "qwen3-vl-8b-instruct",
 	}
 
 	tests := []struct {

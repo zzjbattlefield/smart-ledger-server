@@ -61,7 +61,7 @@ func GetRecognitionPrompt() string {
   "merchant": "商家名称",
   "category": "一级分类（餐饮/交通/购物/娱乐/生活服务/金融）",
   "sub_category": "二级分类",
-  "pay_time": "支付时间（格式：2006-01-02T15:04:05+08:00）",
+  "pay_time": "支付时间（格式：2006-01-02T15:04:05+08:00）(如果图片上缺少时间信息，请返回空字符串)",
   "pay_method": "支付方式（零钱/银行卡/花呗/余额等）",
   "order_no": "订单号（如有）",
   "items": [
@@ -124,7 +124,7 @@ func BuildRecognitionPrompt(categories []model.Category) string {
 	prompt.WriteString(topLevelList)
 	prompt.WriteString(`）",
   "sub_category": "二级分类",
-  "pay_time": "支付时间（格式：2006-01-02T15:04:05+08:00）",
+  "pay_time": "支付时间（格式：2006-01-02T15:04:05+08:00）(如果图片上缺少时间信息，请返回空字符串)",
   "pay_method": "支付方式（零钱/银行卡/花呗/余额等）",
   "order_no": "订单号（如有）",
   "items": [
