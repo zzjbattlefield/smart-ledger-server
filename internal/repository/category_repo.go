@@ -34,9 +34,9 @@ func (r *CategoryRepository) GetByID(ctx context.Context, id uint64) (*model.Cat
 }
 
 // GetAll 获取所有分类
-func (r *CategoryRepository) GetAll(ctx context.Context) ([]model.Category, error) {
+func (r *CategoryRepository) GetAll(ctx context.Context, userID uint64) ([]model.Category, error) {
 	var categories []model.Category
-	err := r.db.WithContext(ctx).Order("sort_order ASC, id ASC").Find(&categories).Error
+	err := r.db.WithContext(ctx).Where("user_id", userID).Order("sort_order ASC, id ASC").Find(&categories).Error
 	return categories, err
 }
 

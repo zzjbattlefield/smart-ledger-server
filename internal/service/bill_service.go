@@ -6,11 +6,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	pkgerrors "github.com/pkg/errors"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
 	"smart-ledger-server/internal/model"
 	"smart-ledger-server/internal/model/dto"
+	"smart-ledger-server/internal/pkg/importer"
 	"smart-ledger-server/internal/pkg/logger"
 	"smart-ledger-server/internal/repository"
 	"smart-ledger-server/pkg/errcode"
@@ -62,20 +65,7 @@ func (s *BillService) Create(ctx context.Context, userID uint64, req *dto.Create
 		Remark:     req.Remark,
 	}
 
-	// 转换账单明细
-	var items []model.BillItem
-	if len(req.Items) > 0 {
-		items = make([]model.BillItem, len(req.Items))
-		for i, item := range req.Items {
-			items[i] = model.BillItem{
-				Name:     item.Name,
-				Price:    item.Price,
-				Quantity: item.Quantity,
-			}
-		}
-	}
-
-	if err := s.billRepo.CreateWithItems(ctx, bill, items); err != nil {
+	if err := s.billRepo.Create(ctx, bill); err != nil {
 		return nil, errcode.ErrBillCreateFailed
 	}
 
@@ -124,20 +114,7 @@ func (s *BillService) CreateFromAI(ctx context.Context, userID uint64, aiResult 
 		IsConfirmed: false,
 	}
 
-	// 转换账单明细
-	var items []model.BillItem
-	if len(aiResult.Items) > 0 {
-		items = make([]model.BillItem, len(aiResult.Items))
-		for i, item := range aiResult.Items {
-			items[i] = model.BillItem{
-				Name:     item.Name,
-				Price:    item.Price,
-				Quantity: item.Quantity,
-			}
-		}
-	}
-
-	if err := s.billRepo.CreateWithItems(ctx, bill, items); err != nil {
+	if err := s.billRepo.Create(ctx, bill); err != nil {
 		return nil, errcode.ErrBillCreateFailed
 	}
 
@@ -334,17 +311,80 @@ func (s *BillService) toBillResponse(bill *model.Bill) *dto.BillResponse {
 		}
 	}
 
-	if len(bill.Items) > 0 {
-		resp.Items = make([]dto.BillItemResponse, len(bill.Items))
-		for i, item := range bill.Items {
-			resp.Items[i] = dto.BillItemResponse{
-				ID:       item.ID,
-				Name:     item.Name,
-				Price:    item.Price,
-				Quantity: item.Quantity,
-			}
-		}
-	}
-
 	return resp
+}
+
+func (s *BillService) ImportFromExcel(ctx context.Context, userID uint64, filePath, parserType string) (response *dto.BillImportResponse, err error) {
+	response = &dto.BillImportResponse{}
+	// 1. 创建解析器
+	parser, _ := importer.NewParser(importer.ParserTypeVivo)
+	records, err := parser.Parse(filePath)
+	if err != nil {
+		return nil, err
+	}
+	//获取当前用户的所有分类
+	categorys, err := s.categoryRepo.GetAll(ctx, userID)
+	if err != nil {
+		return nil, pkgerrors.Wrap(err, "无法获取当前用户的分类列表")
+	}
+	categoryMap := make(map[string]uint64, len(categorys)-1)
+	//将分类转成map
+	for _, category := range categorys {
+		categoryMap[category.Name] = category.ID
+	}
+	otherCategoryID, hasOtherCategory := categoryMap["未分类"] //判断是否存在未分类这个类目
+	for index, reocrd := range records {
+		rowNum := index + 2
+		amount, err := decimal.NewFromString(reocrd.Amount)
+		if err != nil {
+			response.Failed++
+			response.Errors = append(response.Errors, dto.ImportError{
+				Row:     rowNum,
+				Message: "金额格式转换错误",
+			})
+			continue
+		}
+		//确认分类
+		var categoryID uint64
+		if catID, exists := categoryMap[reocrd.CategoryName]; !exists {
+			//当前分类不存在，放到未分类的类目，如果没有未分类则需要帮他创建一个
+			if !hasOtherCategory {
+				otherCategory := &model.Category{
+					Name:     "未分类",
+					UserID:   userID,
+					ParentID: 0,
+				}
+				s.categoryRepo.Create(ctx, otherCategory)
+				otherCategoryID = otherCategory.ID
+				hasOtherCategory = true
+			}
+			categoryID = otherCategoryID
+		} else {
+			categoryID = catID
+		}
+		BillType := model.BillTypeExpense
+		if reocrd.BillType == 2 {
+			BillType = model.BillTypeIncome
+		}
+		//创建账单
+		bill := &model.Bill{
+			UUID:       uuid.New().String(),
+			UserID:     userID,
+			Amount:     amount,
+			BillType:   BillType,
+			CategoryID: &categoryID,
+			PayTime:    reocrd.PayTime,
+			Merchant:   reocrd.Merchant,
+		}
+		if err := s.billRepo.Create(ctx, bill); err != nil {
+			response.Failed++
+			response.Errors = append(response.Errors, dto.ImportError{
+				Row:     rowNum,
+				Message: "创建账单失败",
+			})
+			continue
+		}
+		response.Total++
+	}
+	return response, nil
 }

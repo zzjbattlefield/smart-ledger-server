@@ -90,6 +90,7 @@ func registerBillRoutes(auth *gin.RouterGroup, ctn *container.Container) {
 		bills.GET("", h.List)
 		bills.GET("/:id", h.Get)
 		bills.POST("", h.Create)
+		bills.POST("/import", h.Import)
 		bills.PUT("/:id", h.Update)
 		bills.DELETE("/:id", h.Delete)
 	}

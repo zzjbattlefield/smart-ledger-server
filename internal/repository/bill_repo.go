@@ -25,30 +25,11 @@ func (r *BillRepository) Create(ctx context.Context, bill *model.Bill) error {
 	return r.db.WithContext(ctx).Create(bill).Error
 }
 
-// CreateWithItems 创建账单及明细
-func (r *BillRepository) CreateWithItems(ctx context.Context, bill *model.Bill, items []model.BillItem) error {
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(bill).Error; err != nil {
-			return err
-		}
-		if len(items) > 0 {
-			for i := range items {
-				items[i].BillID = bill.ID
-			}
-			if err := tx.Create(&items).Error; err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-}
-
 // GetByID 根据ID获取账单
 func (r *BillRepository) GetByID(ctx context.Context, id uint64) (*model.Bill, error) {
 	var bill model.Bill
 	err := r.db.WithContext(ctx).
 		Preload("Category").
-		Preload("Items").
 		First(&bill, id).Error
 	if err != nil {
 		return nil, err
@@ -61,7 +42,6 @@ func (r *BillRepository) GetByUUID(ctx context.Context, uuid string) (*model.Bil
 	var bill model.Bill
 	err := r.db.WithContext(ctx).
 		Preload("Category").
-		Preload("Items").
 		Where("uuid = ?", uuid).First(&bill).Error
 	if err != nil {
 		return nil, err
@@ -137,11 +117,6 @@ func (r *BillRepository) Update(ctx context.Context, bill *model.Bill) error {
 // Delete 删除账单(软删除)
 func (r *BillRepository) Delete(ctx context.Context, id uint64) error {
 	return r.db.WithContext(ctx).Delete(&model.Bill{}, id).Error
-}
-
-// DeleteItems 删除账单明细
-func (r *BillRepository) DeleteItems(ctx context.Context, billID uint64) error {
-	return r.db.WithContext(ctx).Where("bill_id = ?", billID).Delete(&model.BillItem{}).Error
 }
 
 // StatsSummary 统计结果

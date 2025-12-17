@@ -89,9 +89,18 @@ type BatchConfig struct {
 
 // LogConfig 日志配置
 type LogConfig struct {
-	Level      string `mapstructure:"level"`       // debug, info, warn, error
-	Format     string `mapstructure:"format"`      // json, console
-	OutputPath string `mapstructure:"output_path"` // stdout, file path
+	Level      string          `mapstructure:"level"`       // debug, info, warn, error
+	Format     string          `mapstructure:"format"`      // json, console
+	OutputPath string          `mapstructure:"output_path"` // stdout, file path
+	Rotation   LogRotateConfig `mapstructure:"rotation"`    // 日志轮转配置
+}
+
+// LogRotateConfig 日志轮转配置
+type LogRotateConfig struct {
+	MaxSize    int  `mapstructure:"max_size"`    // 单个日志文件最大大小(MB)
+	MaxBackups int  `mapstructure:"max_backups"` // 保留的旧日志文件数量
+	MaxAge     int  `mapstructure:"max_age"`     // 保留的日志文件最大天数
+	Compress   bool `mapstructure:"compress"`    // 是否压缩旧日志文件
 }
 
 var globalConfig *Config
@@ -193,5 +202,15 @@ func setDefaults(cfg *Config) {
 	}
 	if cfg.Log.OutputPath == "" {
 		cfg.Log.OutputPath = "stdout"
+	}
+	// Log rotation defaults
+	if cfg.Log.Rotation.MaxSize == 0 {
+		cfg.Log.Rotation.MaxSize = 100 // 100MB
+	}
+	if cfg.Log.Rotation.MaxBackups == 0 {
+		cfg.Log.Rotation.MaxBackups = 10
+	}
+	if cfg.Log.Rotation.MaxAge == 0 {
+		cfg.Log.Rotation.MaxAge = 30 // 30天
 	}
 }

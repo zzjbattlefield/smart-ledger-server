@@ -29,29 +29,20 @@ type UserResponse struct {
 
 // BillResponse 账单响应
 type BillResponse struct {
-	ID          uint64             `json:"id"`
-	UUID        string             `json:"uuid"`
-	Amount      decimal.Decimal    `json:"amount"`
-	BillType    int                `json:"bill_type"`
-	Platform    string             `json:"platform"`
-	Merchant    string             `json:"merchant"`
-	Category    *CategoryResponse  `json:"category"`
-	PayTime     time.Time          `json:"pay_time"`
-	PayMethod   string             `json:"pay_method"`
-	OrderNo     string             `json:"order_no"`
-	Remark      string             `json:"remark"`
-	Confidence  float64            `json:"confidence"`
-	IsConfirmed bool               `json:"is_confirmed"`
-	Items       []BillItemResponse `json:"items,omitempty"`
-	CreatedAt   time.Time          `json:"created_at"`
-}
-
-// BillItemResponse 账单明细响应
-type BillItemResponse struct {
-	ID       uint64          `json:"id"`
-	Name     string          `json:"name"`
-	Price    decimal.Decimal `json:"price"`
-	Quantity int             `json:"quantity"`
+	ID          uint64            `json:"id"`
+	UUID        string            `json:"uuid"`
+	Amount      decimal.Decimal   `json:"amount"`
+	BillType    int               `json:"bill_type"`
+	Platform    string            `json:"platform"`
+	Merchant    string            `json:"merchant"`
+	Category    *CategoryResponse `json:"category"`
+	PayTime     time.Time         `json:"pay_time"`
+	PayMethod   string            `json:"pay_method"`
+	OrderNo     string            `json:"order_no"`
+	Remark      string            `json:"remark"`
+	Confidence  float64           `json:"confidence"`
+	IsConfirmed bool              `json:"is_confirmed"`
+	CreatedAt   time.Time         `json:"created_at"`
 }
 
 // BillListResponse 账单列表响应
@@ -62,27 +53,38 @@ type BillListResponse struct {
 	List     []BillResponse `json:"list"`
 }
 
+// BillImportResponse 账单导入响应
+type BillImportResponse struct {
+	Total  int           `json:"total"`
+	Failed int           `json:"failed"`
+	Errors []ImportError `json:"errors"`
+}
+
+// ImportError 导入错误详情
+type ImportError struct {
+	Row     int    `json:"row"`
+	Message string `json:"message"`
+}
+
+type ImportUnmatchCategory struct {
+	BillID       uint64 `json:"bill_id"`       //数据表里对应的账单id
+	Row          int    `json:"row"`           //excel对应的行号
+	OriginalName string `json:"original_name"` //excel里的原始分类名
+}
+
 // =============== AI 识别相关 ===============
 
 // AIRecognizeResponse AI识别响应
 type AIRecognizeResponse struct {
-	Platform    string                    `json:"platform"`
-	Amount      decimal.Decimal           `json:"amount"`
-	Merchant    string                    `json:"merchant"`
-	Category    string                    `json:"category"`
-	SubCategory string                    `json:"sub_category"`
-	PayTime     string                    `json:"pay_time"`
-	PayMethod   string                    `json:"pay_method"`
-	OrderNo     string                    `json:"order_no"`
-	Items       []AIRecognizeItemResponse `json:"items,omitempty"`
-	Confidence  float64                   `json:"confidence"`
-}
-
-// AIRecognizeItemResponse AI识别明细响应
-type AIRecognizeItemResponse struct {
-	Name     string          `json:"name"`
-	Price    decimal.Decimal `json:"price"`
-	Quantity int             `json:"quantity"`
+	Platform    string          `json:"platform"`
+	Amount      decimal.Decimal `json:"amount"`
+	Merchant    string          `json:"merchant"`
+	Category    string          `json:"category"`
+	SubCategory string          `json:"sub_category"`
+	PayTime     string          `json:"pay_time"`
+	PayMethod   string          `json:"pay_method"`
+	OrderNo     string          `json:"order_no"`
+	Confidence  float64         `json:"confidence"`
 }
 
 // =============== 统计相关 ===============

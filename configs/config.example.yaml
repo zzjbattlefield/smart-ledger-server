@@ -41,4 +41,9 @@ ai:
 log:
   level: debug  # debug, info, warn, error
   format: console  # json, console
-  output_path: stdout  # stdout 或 文件路径
+  output_path: stdout  # stdout 或 文件路径，如 ./logs/app.log
+  rotation:  # 日志轮转配置（仅当 output_path 为文件时生效）
+    max_size: 100      # 单个日志文件最大大小(MB)，默认 100
+    max_backups: 10    # 保留的旧日志文件数量，默认 10
+    max_age: 30        # 保留的日志文件最大天数，默认 30
+    compress: false    # 是否压缩旧日志文件，默认 false

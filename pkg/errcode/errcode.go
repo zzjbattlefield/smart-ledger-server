@@ -103,6 +103,11 @@ var (
 
 	// ErrBillDeleteFailed 删除账单失败
 	ErrBillDeleteFailed = New(40004, "删除账单失败", http.StatusInternalServerError)
+
+	// 导入相关错误 (45000-45999)
+	ErrImportFileParse = New(45001, "文件解析失败", http.StatusInternalServerError)
+
+	ErrImportUnsupported = New(45002, "不支持的导入格式", http.StatusBadRequest)
 )
 
 // =============== AI 错误码 (50000-59999) ===============

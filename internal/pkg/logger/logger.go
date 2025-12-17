@@ -2,9 +2,11 @@ package logger
 
 import (
 	"os"
+	"path/filepath"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"smart-ledger-server/internal/config"
 )
@@ -52,15 +54,9 @@ func Init(cfg *config.LogConfig) (*zap.Logger, error) {
 	}
 
 	// 设置输出
-	var writeSyncer zapcore.WriteSyncer
-	if cfg.OutputPath == "stdout" || cfg.OutputPath == "" {
-		writeSyncer = zapcore.AddSync(os.Stdout)
-	} else {
-		file, err := os.OpenFile(cfg.OutputPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			return nil, err
-		}
-		writeSyncer = zapcore.AddSync(file)
+	writeSyncer, err := getWriteSyncer(cfg)
+	if err != nil {
+		return nil, err
 	}
 
 	// 创建核心
@@ -72,4 +68,29 @@ func Init(cfg *config.LogConfig) (*zap.Logger, error) {
 	Log = logger
 
 	return Log, nil
+}
+
+// getWriteSyncer 获取日志输出
+func getWriteSyncer(cfg *config.LogConfig) (zapcore.WriteSyncer, error) {
+	// 输出到标准输出
+	if cfg.OutputPath == "stdout" || cfg.OutputPath == "" {
+		return zapcore.AddSync(os.Stdout), nil
+	}
+
+	// 输出到文件，确保目录存在
+	dir := filepath.Dir(cfg.OutputPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return nil, err
+	}
+
+	// 使用 lumberjack 实现日志轮转
+	lumberJackLogger := &lumberjack.Logger{
+		Filename:   cfg.OutputPath,
+		MaxSize:    cfg.Rotation.MaxSize,    // 单个日志文件最大大小(MB)
+		MaxBackups: cfg.Rotation.MaxBackups, // 保留的旧日志文件数量
+		MaxAge:     cfg.Rotation.MaxAge,     // 保留的日志文件最大天数
+		Compress:   cfg.Rotation.Compress,   // 是否压缩旧日志文件
+	}
+
+	return zapcore.AddSync(lumberJackLogger), nil
 }

@@ -40,7 +40,6 @@ type CreateBillRequest struct {
 	PayMethod  string          `json:"pay_method" binding:"max=50"`
 	OrderNo    string          `json:"order_no" binding:"max=100"`
 	Remark     string          `json:"remark" binding:"max=500"`
-	Items      []BillItemDTO   `json:"items"`
 }
 
 // UpdateBillRequest 更新账单请求
@@ -57,13 +56,6 @@ type UpdateBillRequest struct {
 	IsConfirmed *bool           `json:"is_confirmed"`
 }
 
-// BillItemDTO 账单明细DTO
-type BillItemDTO struct {
-	Name     string          `json:"name" binding:"required,max=255"`
-	Price    decimal.Decimal `json:"price"`
-	Quantity int             `json:"quantity" binding:"min=1"`
-}
-
 // BillListRequest 账单列表请求
 type BillListRequest struct {
 	Page       int    `form:"page" binding:"min=1"`
@@ -73,6 +65,11 @@ type BillListRequest struct {
 	CategoryID uint64 `form:"category_id"`
 	BillType   int    `form:"bill_type" binding:"omitempty,oneof=1 2"`
 	Keyword    string `form:"keyword" binding:"max=100"`
+}
+
+// ImportBillRequest 导入账单请求
+type ImportBillRequest struct {
+	parserType string `form:"parser_type" binding:"required"`
 }
 
 // SetDefaults 设置默认值

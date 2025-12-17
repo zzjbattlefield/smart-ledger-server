@@ -37,6 +37,7 @@ type BillServiceInterface interface {
 	Update(ctx context.Context, userID, id uint64, req *dto.UpdateBillRequest) (*dto.BillResponse, error)
 	Delete(ctx context.Context, userID, id uint64) error
 	CreateFromAI(ctx context.Context, userID uint64, aiResult *dto.AIRecognizeResponse, imagePath string) (*dto.BillResponse, error)
+	ImportFromExcel(ctx context.Context, userID uint64, filePath, parserType string) (*dto.BillImportResponse, error)
 }
 
 // StatsServiceInterface 统计服务接口（供 Handler 依赖）

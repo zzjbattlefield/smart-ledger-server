@@ -81,24 +81,6 @@ func upInitSchema(ctx context.Context, tx *sql.Tx) error {
 		return err
 	}
 
-	// 创建账单明细表
-	if _, err := tx.ExecContext(ctx, `
-		CREATE TABLE IF NOT EXISTS bill_items (
-			id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-			bill_id BIGINT UNSIGNED NOT NULL,
-			name VARCHAR(255) NOT NULL,
-			price DECIMAL(10,2),
-			quantity INT DEFAULT 1,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-			deleted_at DATETIME,
-			INDEX idx_bill_id (bill_id),
-			INDEX idx_deleted_at (deleted_at)
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-	`); err != nil {
-		return err
-	}
-
 	// 插入默认分类
 	categories := []struct {
 		Name      string
@@ -159,7 +141,7 @@ func upInitSchema(ctx context.Context, tx *sql.Tx) error {
 }
 
 func downInitSchema(ctx context.Context, tx *sql.Tx) error {
-	tables := []string{"bill_items", "bills", "categories", "users"}
+	tables := []string{"bills", "categories", "users"}
 	for _, table := range tables {
 		if _, err := tx.ExecContext(ctx, "DROP TABLE IF EXISTS "+table); err != nil {
 			return err

@@ -1,11 +1,15 @@
 package handler
 
 import (
+	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 
 	"smart-ledger-server/internal/model/dto"
+	"smart-ledger-server/internal/pkg/logger"
 	"smart-ledger-server/internal/pkg/response"
 	"smart-ledger-server/internal/service"
 	"smart-ledger-server/pkg/errcode"
@@ -188,4 +192,43 @@ func (h *BillHandler) Delete(c *gin.Context) {
 	}
 
 	response.Success(c, nil)
+}
+
+func (h *BillHandler) Import(c *gin.Context) {
+	parseType := c.PostForm("parser_type")
+	if parseType == "" {
+		response.ParamError(c, "解析器类型不能为空")
+		return
+	}
+
+	// 2. 获取上传的文件
+	file, err := c.FormFile("file")
+	if err != nil {
+		response.ParamError(c, "请上传文件")
+		return
+	}
+	userID := c.GetUint64("user_id")
+	// 3. 保存临时文件
+	tempDir := filepath.Join(os.TempDir(), "smart-ledger-upload")
+	if err := os.MkdirAll(tempDir, 0755); err != nil {
+		logger.Log.Error("创建临时目录失败", zap.Error(err))
+		response.Error(c, errcode.ErrServer.WithMessage(err.Error()))
+		return
+	}
+	tempPath := filepath.Join(tempDir, file.Filename)
+	if err := c.SaveUploadedFile(file, tempPath); err != nil {
+		logger.Log.Error("保存上传的文件失败", zap.Error(err))
+		response.Error(c, errcode.ErrServer.WithMessage(err.Error()))
+		return
+	}
+	defer os.Remove(tempPath) // 处理完成后删除
+
+	// 4. 调用 Service 导入
+	result, err := h.billService.ImportFromExcel(c.Request.Context(), userID, tempPath, parseType)
+	if err != nil {
+		logger.Log.Error("handler调用billService导入账单失败", zap.Error(err))
+		response.Error(c, errcode.ErrServer.WithMessage(err.Error()))
+		return
+	}
+	response.Success(c, result)
 }

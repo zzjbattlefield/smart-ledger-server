@@ -23,6 +23,7 @@ type UserRepo interface {
 
 // CategoryRepo 分类仓库接口
 type CategoryRepo interface {
+	GetAll(ctx context.Context, userID uint64) ([]model.Category, error)
 	Create(ctx context.Context, category *model.Category) error
 	GetByID(ctx context.Context, id uint64) (*model.Category, error)
 	GetWithChildren(ctx context.Context, userID uint64) ([]model.Category, error)
@@ -39,7 +40,7 @@ type CategoryTemplateRepo interface {
 
 // BillRepo 账单仓库接口
 type BillRepo interface {
-	CreateWithItems(ctx context.Context, bill *model.Bill, items []model.BillItem) error
+	Create(ctx context.Context, bill *model.Bill) error
 	GetByID(ctx context.Context, id uint64) (*model.Bill, error)
 	List(ctx context.Context, query *repository.BillQuery) ([]model.Bill, int64, error)
 	Update(ctx context.Context, bill *model.Bill) error
