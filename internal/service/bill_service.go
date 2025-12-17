@@ -318,9 +318,21 @@ func (s *BillService) ImportFromExcel(ctx context.Context, userID uint64, filePa
 	response = &dto.BillImportResponse{}
 	// 1. 创建解析器
 	parser, _ := importer.NewParser(importer.ParserTypeVivo)
-	records, err := parser.Parse(filePath)
+	parseResult, err := parser.Parse(filePath)
 	if err != nil {
 		return nil, err
+	}
+	//获取解析成功的数据
+	records := parseResult.Records
+	//处理解析阶段就失败的数据
+	for _, parseError := range parseResult.Errors {
+		response.Failed++
+		response.Errors = append(response.Errors, dto.ImportError{
+			Row:     parseError.Row,
+			Column:  parseError.Column,
+			Message: parseError.Message,
+			RowData: parseError.RowData,
+		})
 	}
 	//获取当前用户的所有分类
 	categorys, err := s.categoryRepo.GetAll(ctx, userID)
@@ -333,14 +345,16 @@ func (s *BillService) ImportFromExcel(ctx context.Context, userID uint64, filePa
 		categoryMap[category.Name] = category.ID
 	}
 	otherCategoryID, hasOtherCategory := categoryMap["未分类"] //判断是否存在未分类这个类目
-	for index, reocrd := range records {
-		rowNum := index + 2
+	for _, reocrd := range records {
+		rowNum := reocrd.Row
 		amount, err := decimal.NewFromString(reocrd.Amount)
 		if err != nil {
 			response.Failed++
 			response.Errors = append(response.Errors, dto.ImportError{
 				Row:     rowNum,
 				Message: "金额格式转换错误",
+				Column:  "金额",
+				RowData: reocrd.RowData,
 			})
 			continue
 		}

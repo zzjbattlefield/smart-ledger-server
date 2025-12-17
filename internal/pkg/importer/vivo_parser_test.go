@@ -10,7 +10,8 @@ import (
 
 func TestVivoParser_Parse(t *testing.T) {
 	parser := &VivoParser{}
-	records, err := parser.Parse("test_data/vivo钱包导出.xlsx")
+	parseResult, err := parser.Parse("test_data/vivo钱包导出.xlsx")
+	records := parseResult.Records
 
 	require.NoError(t, err)
 	require.Len(t, records, 4)

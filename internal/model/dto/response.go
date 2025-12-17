@@ -62,14 +62,10 @@ type BillImportResponse struct {
 
 // ImportError 导入错误详情
 type ImportError struct {
-	Row     int    `json:"row"`
-	Message string `json:"message"`
-}
-
-type ImportUnmatchCategory struct {
-	BillID       uint64 `json:"bill_id"`       //数据表里对应的账单id
-	Row          int    `json:"row"`           //excel对应的行号
-	OriginalName string `json:"original_name"` //excel里的原始分类名
+	Row     int               `json:"row"`
+	RowData map[string]string `json:"row_data,omitempty"`
+	Column  string            `json:"column,omitempty"`
+	Message string            `json:"message"`
 }
 
 // =============== AI 识别相关 ===============
