@@ -87,11 +87,24 @@ func (h *CategoryHandler) Get(c *gin.Context) {
 // @Tags 分类
 // @Accept json
 // @Produce json
+// @Param type query int false "分类类型: 1-支出 2-收入"
 // @Success 200 {object} response.Response{data=[]dto.CategoryResponse}
 // @Router /categories [get]
 func (h *CategoryHandler) List(c *gin.Context) {
 	userID := c.GetUint64("user_id")
-	resp, err := h.categoryService.List(c.Request.Context(), userID)
+
+	// 解析类型参数
+	var categoryType *int
+	if typeStr := c.Query("type"); typeStr != "" {
+		t, err := strconv.Atoi(typeStr)
+		if err != nil || (t != 1 && t != 2) {
+			response.ParamError(c, "无效的分类类型")
+			return
+		}
+		categoryType = &t
+	}
+
+	resp, err := h.categoryService.List(c.Request.Context(), userID, categoryType)
 	if err != nil {
 		if e, ok := err.(*errcode.ErrCode); ok {
 			response.Error(c, e)

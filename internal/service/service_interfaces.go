@@ -22,7 +22,7 @@ type UserServiceInterface interface {
 type CategoryServiceInterface interface {
 	Create(ctx context.Context, userID uint64, req *dto.CreateCategoryRequest) (*dto.CategoryResponse, error)
 	GetByID(ctx context.Context, userID, id uint64) (*dto.CategoryResponse, error)
-	List(ctx context.Context, userID uint64) ([]dto.CategoryResponse, error)
+	List(ctx context.Context, userID uint64, categoryType *int) ([]dto.CategoryResponse, error)
 	Update(ctx context.Context, userID, id uint64, req *dto.UpdateCategoryRequest) (*dto.CategoryResponse, error)
 	Delete(ctx context.Context, userID, id uint64) error
 	GetCategoriesForAI(ctx context.Context, userID uint64) ([]model.Category, error)

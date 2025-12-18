@@ -101,6 +101,7 @@ type StatsCategoryRequest struct {
 // CreateCategoryRequest 创建分类请求
 type CreateCategoryRequest struct {
 	Name      string `json:"name" binding:"required,max=50"`
+	Type      int    `json:"type" binding:"omitempty,oneof=1 2"`
 	ParentID  uint64 `json:"parent_id"`
 	Icon      string `json:"icon" binding:"max=100"`
 	SortOrder int    `json:"sort_order"`

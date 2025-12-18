@@ -37,8 +37,14 @@ func NewCategoryService(categoryRepo CategoryRepo, categoryTemplateRepo Category
 
 // Create 创建分类
 func (s *CategoryService) Create(ctx context.Context, userID uint64, req *dto.CreateCategoryRequest) (*dto.CategoryResponse, error) {
-	// 检查名称是否重复
-	exists, err := s.categoryRepo.ExistsByName(ctx, req.Name, userID, req.ParentID)
+	// 设置分类类型，默认为支出
+	categoryType := model.CategoryTypeExpense
+	if req.Type == 2 {
+		categoryType = model.CategoryTypeIncome
+	}
+
+	// 检查名称是否重复（同一父级、同一类型下）
+	exists, err := s.categoryRepo.ExistsByName(ctx, req.Name, userID, req.ParentID, categoryType)
 	if err != nil {
 		return nil, errcode.ErrServer
 	}
@@ -62,6 +68,7 @@ func (s *CategoryService) Create(ctx context.Context, userID uint64, req *dto.Cr
 
 	category := &model.Category{
 		Name:      req.Name,
+		Type:      categoryType,
 		ParentID:  req.ParentID,
 		UserID:    userID,
 		Icon:      req.Icon,
@@ -97,10 +104,29 @@ func (s *CategoryService) GetByID(ctx context.Context, userID, id uint64) (*dto.
 }
 
 // List 获取分类列表（树形结构）
-func (s *CategoryService) List(ctx context.Context, userID uint64) ([]dto.CategoryResponse, error) {
+func (s *CategoryService) List(ctx context.Context, userID uint64, categoryType *int) ([]dto.CategoryResponse, error) {
 	categories, err := s.categoryRepo.GetWithChildren(ctx, userID)
 	if err != nil {
 		return nil, errcode.ErrServer
+	}
+
+	// 如果指定了类型，在内存中过滤
+	if categoryType != nil {
+		filtered := make([]model.Category, 0)
+		for _, cat := range categories {
+			if int(cat.Type) == *categoryType {
+				// 同时过滤子分类
+				filteredChildren := make([]model.Category, 0)
+				for _, child := range cat.Children {
+					if int(child.Type) == *categoryType {
+						filteredChildren = append(filteredChildren, child)
+					}
+				}
+				cat.Children = filteredChildren
+				filtered = append(filtered, cat)
+			}
+		}
+		categories = filtered
 	}
 
 	result := make([]dto.CategoryResponse, len(categories))
@@ -126,9 +152,9 @@ func (s *CategoryService) Update(ctx context.Context, userID, id uint64, req *dt
 		return nil, errcode.ErrForbidden
 	}
 
-	// 检查名称是否重复
+	// 检查名称是否重复（同一父级、同一类型下）
 	if req.Name != "" && req.Name != category.Name {
-		exists, err := s.categoryRepo.ExistsByName(ctx, req.Name, category.UserID, category.ParentID)
+		exists, err := s.categoryRepo.ExistsByName(ctx, req.Name, category.UserID, category.ParentID, category.Type)
 		if err != nil {
 			return nil, errcode.ErrServer
 		}
@@ -199,6 +225,7 @@ func (s *CategoryService) toCategoryResponse(category *model.Category) *dto.Cate
 	return &dto.CategoryResponse{
 		ID:        category.ID,
 		Name:      category.Name,
+		Type:      int(category.Type),
 		ParentID:  category.ParentID,
 		Icon:      category.Icon,
 		SortOrder: category.SortOrder,
@@ -271,6 +298,7 @@ func (s *CategoryService) InitFromTemplate(ctx context.Context, userID uint64) e
 		if t.ParentID == 0 {
 			parentTemplate := model.Category{
 				Name:      t.Name,
+				Type:      t.Type,
 				ParentID:  0,
 				UserID:    userID,
 				Icon:      t.Icon,
@@ -287,6 +315,7 @@ func (s *CategoryService) InitFromTemplate(ctx context.Context, userID uint64) e
 			parentID := idMap[t.ParentID]
 			childTemplate := model.Category{
 				Name:      t.Name,
+				Type:      t.Type,
 				ParentID:  parentID,
 				UserID:    userID,
 				Icon:      t.Icon,
