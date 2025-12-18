@@ -80,6 +80,7 @@ type AIRecognizeResponse struct {
 	PayTime     string          `json:"pay_time"`
 	PayMethod   string          `json:"pay_method"`
 	OrderNo     string          `json:"order_no"`
+	BillType    int             `json:"bill_type"` // 1=支出, 2=收入
 	Confidence  float64         `json:"confidence"`
 }
 
@@ -123,6 +124,7 @@ type CategoryStatsResponse struct {
 type CategoryResponse struct {
 	ID        uint64             `json:"id"`
 	Name      string             `json:"name"`
+	Type      int                `json:"type"`
 	ParentID  uint64             `json:"parent_id"`
 	Icon      string             `json:"icon"`
 	SortOrder int                `json:"sort_order"`

@@ -82,10 +82,10 @@ func (r *CategoryRepository) HasChildren(ctx context.Context, userID, id uint64)
 	return count > 0, err
 }
 
-// ExistsByName 检查分类名是否存在(同一父级下)
-func (r *CategoryRepository) ExistsByName(ctx context.Context, name string, userID, parentID uint64) (bool, error) {
+// ExistsByName 检查分类名是否存在(同一父级、同一类型下)
+func (r *CategoryRepository) ExistsByName(ctx context.Context, name string, userID, parentID uint64, categoryType model.CategoryType) (bool, error) {
 	var count int64
-	query := r.db.WithContext(ctx).Model(&model.Category{}).Where("name = ? AND user_id = ? AND parent_id = ?", name, userID, parentID)
+	query := r.db.WithContext(ctx).Model(&model.Category{}).Where("name = ? AND user_id = ? AND parent_id = ? AND type = ?", name, userID, parentID, categoryType)
 	err := query.Count(&count).Error
 	return count > 0, err
 }
@@ -94,6 +94,16 @@ func (r *CategoryRepository) ExistsByName(ctx context.Context, name string, user
 func (r *CategoryRepository) GetByName(ctx context.Context, userID uint64, name string) (*model.Category, error) {
 	var category model.Category
 	err := r.db.WithContext(ctx).Where("name = ? AND user_id = ?", name, userID).First(&category).Error
+	if err != nil {
+		return nil, err
+	}
+	return &category, nil
+}
+
+// GetByNameAndType 根据名称和类型获取分类
+func (r *CategoryRepository) GetByNameAndType(ctx context.Context, userID uint64, name string, categoryType model.CategoryType) (*model.Category, error) {
+	var category model.Category
+	err := r.db.WithContext(ctx).Where("name = ? AND user_id = ? AND type = ?", name, userID, categoryType).First(&category).Error
 	if err != nil {
 		return nil, err
 	}

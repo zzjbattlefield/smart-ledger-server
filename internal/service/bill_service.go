@@ -74,16 +74,24 @@ func (s *BillService) Create(ctx context.Context, userID uint64, req *dto.Create
 
 // CreateFromAI 从AI识别结果创建账单
 func (s *BillService) CreateFromAI(ctx context.Context, userID uint64, aiResult *dto.AIRecognizeResponse, imagePath string) (*dto.BillResponse, error) {
-	// 查找分类
+	// 根据 AI 返回的 bill_type 确定账单类型和分类类型
+	billType := model.BillTypeExpense
+	categoryType := model.CategoryTypeExpense
+	if aiResult.BillType == 2 {
+		billType = model.BillTypeIncome
+		categoryType = model.CategoryTypeIncome
+	}
+
+	// 查找分类（按类型过滤）
 	var categoryID *uint64
 	if aiResult.SubCategory != "" {
-		category, err := s.categoryRepo.GetByName(ctx, userID, aiResult.SubCategory)
+		category, err := s.categoryRepo.GetByNameAndType(ctx, userID, aiResult.SubCategory, categoryType)
 		if err == nil {
 			categoryID = &category.ID
 		}
 	}
 	if categoryID == nil && aiResult.Category != "" {
-		category, err := s.categoryRepo.GetByName(ctx, userID, aiResult.Category)
+		category, err := s.categoryRepo.GetByNameAndType(ctx, userID, aiResult.Category, categoryType)
 		if err == nil {
 			categoryID = &category.ID
 		}
@@ -102,7 +110,7 @@ func (s *BillService) CreateFromAI(ctx context.Context, userID uint64, aiResult 
 		UUID:        uuid.New().String(),
 		UserID:      userID,
 		Amount:      aiResult.Amount,
-		BillType:    model.BillTypeExpense,
+		BillType:    billType,
 		Platform:    aiResult.Platform,
 		Merchant:    aiResult.Merchant,
 		CategoryID:  categoryID,
@@ -306,6 +314,7 @@ func (s *BillService) toBillResponse(bill *model.Bill) *dto.BillResponse {
 			resp.Category = &dto.CategoryResponse{
 				ID:   bill.Category.ID,
 				Name: bill.Category.Name,
+				Type: int(bill.Category.Type),
 				Icon: bill.Category.Icon,
 			}
 		}

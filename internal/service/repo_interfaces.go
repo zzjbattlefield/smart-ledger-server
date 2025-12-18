@@ -30,8 +30,9 @@ type CategoryRepo interface {
 	Update(ctx context.Context, category *model.Category) error
 	Delete(ctx context.Context, id uint64) error
 	HasChildren(ctx context.Context, userID, id uint64) (bool, error)
-	ExistsByName(ctx context.Context, name string, userID, parentID uint64) (bool, error)
+	ExistsByName(ctx context.Context, name string, userID, parentID uint64, categoryType model.CategoryType) (bool, error)
 	GetByName(ctx context.Context, userID uint64, name string) (*model.Category, error)
+	GetByNameAndType(ctx context.Context, userID uint64, name string, categoryType model.CategoryType) (*model.Category, error)
 }
 
 type CategoryTemplateRepo interface {

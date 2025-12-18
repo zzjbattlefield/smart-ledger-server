@@ -58,8 +58,9 @@ func GetRecognitionPrompt() string {
 {
   "platform": "支付平台（微信支付/支付宝/美团/京东/银行APP/其他）",
   "amount": 金额数字（不含货币符号）,
-  "merchant": "商家名称",
-  "category": "一级分类（餐饮/交通/购物/娱乐/生活服务/金融）",
+  "merchant": "商家名称或来源",
+  "bill_type": 账单类型（1=支出，2=收入）,
+  "category": "一级分类",
   "sub_category": "二级分类",
   "pay_time": "支付时间（格式：2006-01-02T15:04:05+08:00）(如果图片上缺少时间信息，请返回空字符串)",
   "pay_method": "支付方式（零钱/银行卡/花呗/余额等）",
@@ -70,7 +71,7 @@ func GetRecognitionPrompt() string {
   "confidence": 识别置信度（0-1之间的小数）
 }
 
-分类说明：
+【支出分类】（bill_type=1）：
 - 餐饮：正餐、小吃零食、咖啡饮品、水果生鲜、外卖配送费
 - 交通：公共交通、打车、共享单车、加油停车
 - 购物：日用百货、服饰鞋包、数码电器、美妆护肤
@@ -78,37 +79,71 @@ func GetRecognitionPrompt() string {
 - 生活服务：话费充值、水电燃气、医疗健康、快递物流、其他服务
 - 金融：转账、还款、理财、保险
 
+【收入分类】（bill_type=2）：
+- 薪资：工资、奖金、补贴
+- 收红包：微信红包、支付宝红包
+- 理财收益：利息、分红、投资收益
+- 其他收入：退款、报销、意外来财
+
 注意事项：
 1. 金额必须是纯数字，不要包含货币符号
 2. 如果无法识别某个字段，请使用空字符串或null
 3. 时间格式必须是ISO 8601格式,如果图片上缺少时间信息，请返回空字符串
 4. 置信度反映识别结果的可靠程度
-5. 只返回JSON，不要有其他文字说明`
+5. 只返回JSON，不要有其他文字说明
+6. bill_type判断规则：
+   - 支出（1）：付款、消费、转账给他人、还款等减少资产的交易
+   - 收入（2）：收款、收红包、工资到账、退款、转账收入等增加资产的交易
+7. category和sub_category必须从上述对应类型的分类中选择`
 }
 
 // BuildRecognitionPrompt 根据分类数据构建识别提示词
 func BuildRecognitionPrompt(categories []model.Category) string {
-	// 构建一级分类列表
-	var topLevelNames []string
+	// 按类型分组分类
+	var expenseCategories, incomeCategories []model.Category
 	for _, cat := range categories {
-		topLevelNames = append(topLevelNames, cat.Name)
-	}
-	topLevelList := strings.Join(topLevelNames, "/")
-
-	// 构建分类说明
-	var categoryDesc strings.Builder
-	categoryDesc.WriteString("分类说明：\n")
-	for _, cat := range categories {
-		var childNames []string
-		for _, child := range cat.Children {
-			childNames = append(childNames, child.Name)
+		if cat.Type == model.CategoryTypeExpense {
+			expenseCategories = append(expenseCategories, cat)
+		} else if cat.Type == model.CategoryTypeIncome {
+			incomeCategories = append(incomeCategories, cat)
 		}
-		if len(childNames) > 0 {
-			categoryDesc.WriteString("- ")
-			categoryDesc.WriteString(cat.Name)
-			categoryDesc.WriteString("：")
-			categoryDesc.WriteString(strings.Join(childNames, "、"))
-			categoryDesc.WriteString("\n")
+	}
+
+	// 构建支出分类说明
+	var expenseDesc strings.Builder
+	if len(expenseCategories) > 0 {
+		expenseDesc.WriteString("【支出分类】（bill_type=1）：\n")
+		for _, cat := range expenseCategories {
+			var childNames []string
+			for _, child := range cat.Children {
+				childNames = append(childNames, child.Name)
+			}
+			expenseDesc.WriteString("- ")
+			expenseDesc.WriteString(cat.Name)
+			if len(childNames) > 0 {
+				expenseDesc.WriteString("：")
+				expenseDesc.WriteString(strings.Join(childNames, "、"))
+			}
+			expenseDesc.WriteString("\n")
+		}
+	}
+
+	// 构建收入分类说明
+	var incomeDesc strings.Builder
+	if len(incomeCategories) > 0 {
+		incomeDesc.WriteString("【收入分类】（bill_type=2）：\n")
+		for _, cat := range incomeCategories {
+			var childNames []string
+			for _, child := range cat.Children {
+				childNames = append(childNames, child.Name)
+			}
+			incomeDesc.WriteString("- ")
+			incomeDesc.WriteString(cat.Name)
+			if len(childNames) > 0 {
+				incomeDesc.WriteString("：")
+				incomeDesc.WriteString(strings.Join(childNames, "、"))
+			}
+			incomeDesc.WriteString("\n")
 		}
 	}
 
@@ -119,10 +154,9 @@ func BuildRecognitionPrompt(categories []model.Category) string {
 {
   "platform": "支付平台（微信支付/支付宝/美团/京东/银行APP/其他）",
   "amount": 金额数字（不含货币符号）,
-  "merchant": "商家名称",
-  "category": "一级分类（`)
-	prompt.WriteString(topLevelList)
-	prompt.WriteString(`）",
+  "merchant": "商家名称或来源",
+  "bill_type": 账单类型（1=支出，2=收入）,
+  "category": "一级分类",
   "sub_category": "二级分类",
   "pay_time": "支付时间（格式：2006-01-02T15:04:05+08:00）(如果图片上缺少时间信息，请返回空字符串)",
   "pay_method": "支付方式（零钱/银行卡/花呗/余额等）",
@@ -134,14 +168,20 @@ func BuildRecognitionPrompt(categories []model.Category) string {
 }
 
 `)
-	prompt.WriteString(categoryDesc.String())
+	prompt.WriteString(expenseDesc.String())
+	prompt.WriteString("\n")
+	prompt.WriteString(incomeDesc.String())
 	prompt.WriteString(`
 注意事项：
 1. 金额必须是纯数字，不要包含货币符号
 2. 如果无法识别某个字段，请使用空字符串或null
 3. 时间格式必须是ISO 8601格式，如果图片上缺少支付时间信息才返回空字符串
 4. 置信度反映识别结果的可靠程度
-5. 只返回JSON，不要有其他文字说明`)
+5. 只返回JSON，不要有其他文字说明
+6. bill_type判断规则：
+   - 支出（1）：付款、消费、转账给他人、还款等减少资产的交易
+   - 收入（2）：收款、收红包、工资到账、退款、转账收入等增加资产的交易
+7. category和sub_category必须从上述对应类型的分类中选择`)
 
 	return prompt.String()
 }
