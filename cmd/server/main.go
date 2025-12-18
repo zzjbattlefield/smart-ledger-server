@@ -42,11 +42,11 @@ func main() {
 	// 4. 初始化限流器
 	ipLimiter := middleware.NewIPRateLimiter(rate.Limit(10), 20)
 
-	// 5. 设置路由（只传递容器）
-	r := setupRouter(cfg, ctn)
+	// 5. 创建路由引擎并应用全局中间件
+	r := createEngine(cfg, log, ipLimiter)
 
-	// 6. 应用全局中间件
-	applyGlobalMiddleware(r, log, ipLimiter)
+	// 6. 注册路由
+	registerAllRoutes(r, cfg, ctn)
 
 	// 7. 启动服务器
 	runServer(cfg, r, log)

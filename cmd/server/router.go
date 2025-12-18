@@ -10,18 +10,9 @@ import (
 	"smart-ledger-server/internal/middleware"
 )
 
-// setupRouter 设置路由
-func setupRouter(cfg *config.Config, ctn *container.Container) *gin.Engine {
-	// 创建Gin实例
-	if cfg.Server.Mode == "release" {
-		gin.SetMode(gin.ReleaseMode)
-	}
-	r := gin.New()
-
+func registerAllRoutes(r *gin.Engine, cfg *config.Config, ctn *container.Container) {
 	// 注册路由
 	registerRoutes(r, cfg, ctn)
-
-	return r
 }
 
 // registerRoutes 注册路由

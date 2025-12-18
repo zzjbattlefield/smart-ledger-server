@@ -76,6 +76,16 @@ func applyGlobalMiddleware(r *gin.Engine, log *zap.Logger, limiter *middleware.I
 	r.Use(middleware.RateLimit(limiter))
 }
 
+func createEngine(cfg *config.Config, log *zap.Logger, limiter *middleware.IPRateLimiter) *gin.Engine {
+	if cfg.Server.Mode == "release" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+	r := gin.New()
+	//先注册全局中间件
+	applyGlobalMiddleware(r, log, limiter)
+	return r
+}
+
 // runServer 启动服务器并处理优雅关闭
 func runServer(cfg *config.Config, r *gin.Engine, log *zap.Logger) {
 	srv := &http.Server{
