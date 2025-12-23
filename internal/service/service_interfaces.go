@@ -44,6 +44,7 @@ type BillServiceInterface interface {
 type StatsServiceInterface interface {
 	GetSummary(ctx context.Context, userID uint64, req *dto.StatsSummaryRequest) (*dto.StatsSummaryResponse, error)
 	GetCategoryStats(ctx context.Context, userID uint64, req *dto.StatsCategoryRequest) (*dto.CategoryStatsResponse, error)
+	GetSecondaryCategoryStats(ctx context.Context, userID uint64, req *dto.StatsSecondaryCategoryRequest) (*dto.CategoryStatsResponse, error)
 }
 
 // AIServiceInterface AI服务接口（供 Handler 依赖）

@@ -5,9 +5,11 @@ import (
 	"time"
 
 	"github.com/shopspring/decimal"
+	"go.uber.org/zap"
 
 	"smart-ledger-server/internal/model"
 	"smart-ledger-server/internal/model/dto"
+	"smart-ledger-server/internal/pkg/logger"
 	"smart-ledger-server/pkg/errcode"
 )
 
@@ -53,12 +55,12 @@ func (s *StatsService) GetSummary(ctx context.Context, userID uint64, req *dto.S
 	for i, stat := range categoryStats {
 		percent := 0.0
 		if !summary.TotalExpense.IsZero() {
-			percent, _ = stat.Amount.Div(summary.TotalExpense).Mul(decimal.NewFromInt(100)).Float64()
+			percent, _ = stat.Amount.Div(summary.TotalExpense).Mul(decimal.NewFromInt(100)).Round(2).Float64()
 		}
 		topCategories[i] = dto.CategoryStatsItem{
 			ID:      stat.CategoryID,
 			Name:    stat.CategoryName,
-			Amount:  stat.Amount.Round(2),
+			Amount:  stat.Amount,
 			Percent: percent,
 		}
 	}
@@ -122,6 +124,39 @@ func (s *StatsService) GetCategoryStats(ctx context.Context, userID uint64, req 
 		}
 	}
 
+	return &dto.CategoryStatsResponse{
+		Period:     req.Date,
+		Categories: categories,
+	}, nil
+}
+
+func (s *StatsService) GetSecondaryCategoryStats(ctx context.Context, userID uint64, req *dto.StatsSecondaryCategoryRequest) (*dto.CategoryStatsResponse, error) {
+	startDate, endDate, err := s.parsePeriod(req.Period, req.Date)
+	if err != nil {
+		return nil, errcode.ErrParams.WithMessage(err.Error())
+	}
+	categoryStats, err := s.billRepo.GetSecondaryCategoryStats(ctx, userID, model.BillTypeExpense, startDate, endDate, req.CategoryID)
+	if err != nil {
+		logger.Log.Error("获取二级分类统计失败", zap.Error(err))
+		return nil, errcode.ErrServer
+	}
+	var total decimal.Decimal
+	for _, stat := range categoryStats {
+		total = total.Add(stat.Amount)
+	}
+	categories := make([]dto.CategoryStatsItem, len(categoryStats))
+	for i, stat := range categoryStats {
+		percent := 0.0
+		if !total.IsZero() {
+			percent, _ = stat.Amount.Div(total).Mul(decimal.NewFromInt(100)).Round(2).Float64()
+		}
+		categories[i] = dto.CategoryStatsItem{
+			ID:      stat.CategoryID,
+			Name:    stat.CategoryName,
+			Amount:  stat.Amount,
+			Percent: percent,
+		}
+	}
 	return &dto.CategoryStatsResponse{
 		Period:     req.Date,
 		Categories: categories,

@@ -53,6 +53,26 @@ func (h *StatsHandler) GetSummary(c *gin.Context) {
 	response.Success(c, resp)
 }
 
+func (h *StatsHandler) GetSecondaryCategoryStats(c *gin.Context) {
+	req := &dto.StatsSecondaryCategoryRequest{}
+	userID := c.GetUint64("user_id")
+	if err := c.ShouldBindQuery(req); err != nil {
+		response.ParamError(c, err.Error())
+		return
+	}
+	resp, err := h.statsService.GetSecondaryCategoryStats(c.Request.Context(), userID, req)
+	if err != nil {
+		if e, ok := err.(*errcode.ErrCode); ok {
+			response.Error(c, e)
+			return
+		} else {
+			response.ServerError(c)
+			return
+		}
+	}
+	response.Success(c, resp)
+}
+
 // GetCategoryStats 获取分类统计
 // @Summary 获取分类统计
 // @Tags 统计

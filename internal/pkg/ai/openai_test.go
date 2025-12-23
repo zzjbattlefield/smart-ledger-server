@@ -95,22 +95,32 @@ func TestOpenAIClient_RecognizePayment_Integration(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		imagePath   string
-		wantAmount  decimal.Decimal
-		wantPayTime string
+		name         string
+		imagePath    string
+		wantAmount   decimal.Decimal
+		wantPayTime  string
+		wantBillType int
 	}{
 		{
-			name:        "normal payment",
-			imagePath:   "test_img/test_payment_normal.jpg",
-			wantAmount:  decimal.NewFromFloat(17.3),
-			wantPayTime: "2025-12-11T12:24:23+08:00",
+			name:         "normal payment",
+			imagePath:    "test_img/test_payment_normal.jpg",
+			wantAmount:   decimal.NewFromFloat(17.3),
+			wantPayTime:  "2025-12-11T12:24:23+08:00",
+			wantBillType: 1,
 		},
 		{
-			name:        "no pay time",
-			imagePath:   "test_img/test_payment_miss_paytime.jpg",
-			wantAmount:  decimal.NewFromFloat(36.53),
-			wantPayTime: "",
+			name:         "no pay time",
+			imagePath:    "test_img/test_payment_miss_paytime.jpg",
+			wantAmount:   decimal.NewFromFloat(36.53),
+			wantPayTime:  "",
+			wantBillType: 1,
+		},
+		{
+			name:         "in come",
+			imagePath:    "test_img/test_income.jpg",
+			wantAmount:   decimal.NewFromFloat(1),
+			wantPayTime:  "2025-12-17T22:26:04+08:00",
+			wantBillType: 2,
 		},
 	}
 	for _, tt := range tests {

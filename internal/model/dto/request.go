@@ -96,6 +96,13 @@ type StatsCategoryRequest struct {
 	Date   string `form:"date" binding:"required"`
 }
 
+// StatsSecondaryCategoryRequest 二级分类统计请求
+type StatsSecondaryCategoryRequest struct {
+	Period     string `form:"period" binding:"required,oneof=day week month year"`
+	Date       string `form:"date" binding:"required"`
+	CategoryID uint64 `form:"category_id" binding:"required"`
+}
+
 // =============== 分类相关 ===============
 
 // CreateCategoryRequest 创建分类请求

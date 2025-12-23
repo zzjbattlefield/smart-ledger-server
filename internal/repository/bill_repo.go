@@ -172,14 +172,42 @@ type CategoryStats struct {
 	Amount       decimal.Decimal
 }
 
-// GetCategoryStats 获取分类统计
+// GetCategoryStats 获取一级分类统计，包含二级分类和一级分类本身的金额
 func (r *BillRepository) GetCategoryStats(ctx context.Context, userID uint64, billType model.BillType, startDate, endDate time.Time) ([]CategoryStats, error) {
 	var stats []CategoryStats
 	err := r.db.WithContext(ctx).Model(&model.Bill{}).
-		Select("category_id, categories.name as category_name, SUM(bills.amount) as amount").
-		Joins("LEFT JOIN categories ON bills.category_id = categories.id AND categories.user_id = bills.user_id").
+		Select(`case
+		when c.parent_id = 0 then c.name
+		else pc.name
+	end as category_name ,
+	case
+		when c.parent_id = 0 then c.id
+		else pc.id
+	end as category_id,
+	sum(bills.amount) amount`).
+		Joins("Left Join categories c on c.id = bills.category_id and c.user_id = bills.user_id").
+		Joins("Left Join categories pc on pc.id = c.parent_id and pc.user_id = bills.user_id").
 		Where("bills.user_id = ? AND bills.bill_type = ? AND bills.pay_time >= ? AND bills.pay_time <= ?",
 			userID, billType, startDate, endDate).
+		Group(`case
+		when c.parent_id = 0 then c.name
+		else pc.name
+	end`).
+		Group(`case
+		when c.parent_id = 0 then c.id
+		else pc.id
+	end`).
+		Order("amount DESC").
+		Scan(&stats).Error
+	return stats, err
+}
+
+// GetSecondaryCategoryStats 获取二级分类统计
+func (r *BillRepository) GetSecondaryCategoryStats(ctx context.Context, userID uint64, billType model.BillType, startDate, endDate time.Time, categoryID uint64) ([]CategoryStats, error) {
+	var stats []CategoryStats
+	err := r.db.Model(&model.Bill{}).Select("category_id, categories.name as category_name, SUM(bills.amount) as amount").
+		Joins("Left Join categories on categories.id = bills.category_id and categories.user_id = bills.user_id").
+		Where("(bills.user_id = ? AND bills.bill_type = ? AND bills.pay_time >= ? AND bills.pay_time <= ?) AND (categories.parent_id = ? OR categories.id = ?)", userID, billType, startDate, endDate, categoryID, categoryID).
 		Group("category_id").
 		Group("category_name").
 		Order("amount DESC").

@@ -94,6 +94,7 @@ func registerStatsRoutes(auth *gin.RouterGroup, ctn *container.Container) {
 	{
 		stats.GET("/summary", h.GetSummary)
 		stats.GET("/category", h.GetCategoryStats)
+		stats.GET("/secondary-category", h.GetSecondaryCategoryStats)
 	}
 }
 
