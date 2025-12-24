@@ -51,5 +51,6 @@ type BillRepo interface {
 	GetStatsSummary(ctx context.Context, userID uint64, startDate, endDate time.Time) (*repository.StatsSummary, error)
 	GetCategoryStats(ctx context.Context, userID uint64, billType model.BillType, startDate, endDate time.Time) ([]repository.CategoryStats, error)
 	GetDailyStats(ctx context.Context, userID uint64, startDate, endDate time.Time) ([]repository.DailyStats, error)
+	GetMonthlyStats(ctx context.Context, userID uint64, startDate, endDate time.Time) ([]repository.MonthlyStats, error)
 	GetSecondaryCategoryStats(ctx context.Context, userID uint64, billType model.BillType, startDate, endDate time.Time, categoryID uint64) ([]repository.CategoryStats, error)
 }

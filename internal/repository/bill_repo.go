@@ -222,6 +222,20 @@ type DailyStats struct {
 	Income  decimal.Decimal
 }
 
+func (d *DailyStats) GetLabel() string {
+	return d.Date.Format("2006-01-02")
+}
+
+type MonthlyStats struct {
+	Month   string
+	Expense decimal.Decimal
+	Income  decimal.Decimal
+}
+
+func (m *MonthlyStats) GetLabel() string {
+	return m.Month
+}
+
 // GetDailyStats 获取每日统计
 func (r *BillRepository) GetDailyStats(ctx context.Context, userID uint64, startDate, endDate time.Time) ([]DailyStats, error) {
 	var stats []DailyStats
@@ -234,6 +248,20 @@ func (r *BillRepository) GetDailyStats(ctx context.Context, userID uint64, start
 		Where("user_id = ? AND pay_time >= ? AND pay_time <= ?", userID, startDate, endDate).
 		Group("DATE(pay_time)").
 		Order("date ASC").
+		Scan(&stats).Error
+	return stats, err
+}
+
+func (r *BillRepository) GetMonthlyStats(ctx context.Context, userID uint64, startDate, endDate time.Time) ([]MonthlyStats, error) {
+	var stats []MonthlyStats
+	err := r.db.WithContext(ctx).Model(&model.Bill{}).Select(`
+	DATE_FORMAT(pay_time, "%Y-%m") as month,
+	SUM(CASE WHEN bill_type = 1 THEN amount ELSE 0 END) as expense,
+	SUM(CASE WHEN bill_type = 2 THEN amount ELSE 0 END) as income
+	`).
+		Where("user_id = ? AND pay_time >= ? AND pay_time <= ?", userID, startDate, endDate).
+		Group("month").
+		Order("month ASC").
 		Scan(&stats).Error
 	return stats, err
 }

@@ -35,6 +35,7 @@ func (s *StatsService) GetSummary(ctx context.Context, userID uint64, req *dto.S
 	// 获取基础统计
 	summary, err := s.billRepo.GetStatsSummary(ctx, userID, startDate, endDate)
 	if err != nil {
+		logger.Log.Error("获取基础统计失败", zap.Error(err))
 		return nil, errcode.ErrServer
 	}
 
@@ -48,6 +49,7 @@ func (s *StatsService) GetSummary(ctx context.Context, userID uint64, req *dto.S
 	// 获取分类统计
 	categoryStats, err := s.billRepo.GetCategoryStats(ctx, userID, model.BillTypeExpense, startDate, endDate)
 	if err != nil {
+		logger.Log.Error("获取分类统计失败", zap.Error(err))
 		return nil, errcode.ErrServer
 	}
 
@@ -64,22 +66,62 @@ func (s *StatsService) GetSummary(ctx context.Context, userID uint64, req *dto.S
 			Percent: percent,
 		}
 	}
+	trend := make([]dto.TrendItem, 0)
+	if req.Period == "year" {
+		//年度统计趋势按月份返回
+		monthlyStats, err := s.billRepo.GetMonthlyStats(ctx, userID, startDate, endDate)
+		if err != nil {
+			logger.Log.Error("获取月度统计失败", zap.Error(err))
+			return nil, errcode.ErrServer
+		}
+		monthlyStatsMap := make(map[string]dto.TrendItem)
+		for _, stats := range monthlyStats {
+			monthlyStatsMap[stats.GetLabel()] = dto.TrendItem{
+				Date:    stats.GetLabel(),
+				Expense: stats.Expense,
+				Income:  stats.Income,
+			}
+		}
+		for i := startDate; !i.After(endDate); i = i.AddDate(0, 1, 0) {
+			if item, exists := monthlyStatsMap[i.Format("2006-01")]; !exists {
+				trend = append(trend, dto.TrendItem{
+					Date:    i.Format("2006-01"),
+					Expense: decimal.Zero,
+					Income:  decimal.Zero,
+				})
+			} else {
+				trend = append(trend, item)
+			}
+		}
 
-	// 获取趋势数据
-	dailyStats, err := s.billRepo.GetDailyStats(ctx, userID, startDate, endDate)
-	if err != nil {
-		return nil, errcode.ErrServer
-	}
-
-	trend := make([]dto.TrendItem, len(dailyStats))
-	for i, stat := range dailyStats {
-		trend[i] = dto.TrendItem{
-			Date:    dto.DateOnly(stat.Date),
-			Expense: stat.Expense,
-			Income:  stat.Income,
+	} else {
+		//其余的按照天返回
+		// 获取趋势数据
+		dailyStats, err := s.billRepo.GetDailyStats(ctx, userID, startDate, endDate)
+		if err != nil {
+			logger.Log.Error("获取日度统计失败", zap.Error(err))
+			return nil, errcode.ErrServer
+		}
+		dailyStatsMap := make(map[string]dto.TrendItem)
+		for _, stats := range dailyStats {
+			dailyStatsMap[stats.GetLabel()] = dto.TrendItem{
+				Date:    stats.GetLabel(),
+				Expense: stats.Expense,
+				Income:  stats.Income,
+			}
+		}
+		for i := startDate; !i.After(endDate); i = i.AddDate(0, 0, 1) {
+			if item, exists := dailyStatsMap[i.Format("2006-01-02")]; !exists {
+				trend = append(trend, dto.TrendItem{
+					Date:    i.Format("2006-01-02"),
+					Expense: decimal.Zero,
+					Income:  decimal.Zero,
+				})
+			} else {
+				trend = append(trend, item)
+			}
 		}
 	}
-
 	return &dto.StatsSummaryResponse{
 		Period:        req.Date,
 		TotalExpense:  summary.TotalExpense.Round(2),

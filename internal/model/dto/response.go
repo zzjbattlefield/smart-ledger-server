@@ -107,7 +107,7 @@ type CategoryStatsItem struct {
 
 // TrendItem 趋势项
 type TrendItem struct {
-	Date    DateOnly        `json:"date"`
+	Date    string          `json:"date"`
 	Expense decimal.Decimal `json:"expense"`
 	Income  decimal.Decimal `json:"income"`
 }
